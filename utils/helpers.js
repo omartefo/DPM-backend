@@ -11,10 +11,10 @@ exports.sendSMS = async (number, text) => {
 		body: text
 	});
 
-	return await superAgent.post(process.env.BULK_SMS_API_BASE_URL + 'messages')
+	return await superAgent.post(process.env.BULK_SMS_API_BASE_URL)
 				.send(payload)
 				.set('Content-Type', 'application/json')
-				.set('Authorization', `Basic ${process.env.BULK_SMS_TOKEN_ID}`);
+				.set('Authorization', `Basic ${process.env.BULK_SMS_TOKEN}`);
 }
 
 exports.sendEmail = async (options) => {
