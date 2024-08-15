@@ -1,4 +1,4 @@
-# Backend for Doha Project management
+# Backend for Doha Project management(DPM)
 ## Technologies Used
 - Node JS
 - Express JS

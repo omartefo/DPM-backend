@@ -27,7 +27,7 @@ const downloadsRouter = require('./routes/downloadCenterRoutes');
 
 
 app.get('/', (req, res) => {
-	res.status(200).send('Welcome to Wissal.');
+	res.status(200).send('Welcome to Doha Project Management(DPM) backend.');
 });
 
 // API endPoints

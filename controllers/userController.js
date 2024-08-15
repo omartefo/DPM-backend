@@ -249,7 +249,7 @@ exports.mobileOTPVerification = catchAsync(async(req, res, next) => {
 	if (error) return next(new AppError(error.message, 400));
 
 	const verificationCode = generateRandomFourDigits();
-	const text = `Your Wissal Verification code is:\n${verificationCode}`;
+	const text = `Your DPM Verification code is:\n${verificationCode}`;
 	const mobileNumber = '+974' + req.body.mobileNumber;
 
 	const output = await sendSMS(mobileNumber, text);
@@ -274,7 +274,7 @@ exports.sendEmailToUser = catchAsync( async(req, res, next) => {
 		`;
 
 	const options = {
-		email: 'info@wissal.qa',
+		email: 'info@dpm.qa',
 		subject,
 		html: messageWithUserInfo
 	};
@@ -351,7 +351,7 @@ sendVerifyAccountEmail = async (token, user) => {
 	let redirectUrl = `http://localhost:4200/confirm/${token}`;
 
 	if (process.env.NODE_ENV === 'production') {
-		redirectUrl = `https://wissal.herokuapp.com/confirm/${token}`;
+		redirectUrl = `https://dpm.herokuapp.com/confirm/${token}`;
 	}
 	
 	const emailOptions = {
@@ -359,7 +359,7 @@ sendVerifyAccountEmail = async (token, user) => {
 		subject: 'Please confirm your account',
 		html:  `<h1>Email Confirmation</h1>
 			<h2>Hi, ${user.name}</h2>
-			<p>Thank you for registering with Wissal. Please confirm your email by clicking on the following link</p>
+			<p>Thank you for registering with Doha Project Management(DPM). Please confirm your email by clicking on the following link</p>
 			<a href=${redirectUrl}> Click here</a>
 		</div>`
 	};
