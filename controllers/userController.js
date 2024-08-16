@@ -69,10 +69,20 @@ exports.getAllUsers = async (req, res, next) => {
 	const offset = (page - 1) * limit;
 	
 	const users = await User.findAndCountAll({
+		attributes: {
+			exclude: ['password', 'confirmationCode', 'passwordResetToken', 'passwordResetExpires'],
+		},
 		where,
 		limit,
 		offset,
-		include: [{ model: UserCompany, required: false }]});
+		include: [
+			{ 
+				model: UserCompany,
+				attributes: ['companyId', 'name'],
+				required: false 
+			}
+		]
+	});
 
 	res.status(200).json({
 		status: 'success',
@@ -245,12 +255,15 @@ exports.verifyUser = catchAsync(async(req, res, next) => {
 });
 
 exports.mobileOTPVerification = catchAsync(async(req, res, next) => {
+	const countryCode = '+92';
 	const { error } = validateMobileNumber(req.body);
 	if (error) return next(new AppError(error.message, 400));
 
 	const verificationCode = generateRandomFourDigits();
 	const text = `Your DPM Verification code is:\n${verificationCode}`;
-	const mobileNumber = '+974' + req.body.mobileNumber;
+	const mobileNumber = `${countryCode}${req.body.mobileNumber}`;
+
+	console.log('Mobile number for OTP =', mobileNumber);
 
 	const output = await sendSMS(mobileNumber, text);
 
@@ -274,7 +287,7 @@ exports.sendEmailToUser = catchAsync( async(req, res, next) => {
 		`;
 
 	const options = {
-		email: 'info@dpm.qa',
+		email: email,
 		subject,
 		html: messageWithUserInfo
 	};
@@ -307,7 +320,7 @@ validateRequestData = (req, next) => {
 
 validateMobileNumber = (mobNumber) => {
 	const schema = Joi.object({
-		mobileNumber: Joi.string().required().min(8).max(8)
+		mobileNumber: Joi.string().required().min(10).max(10)
 	});
 
 	return schema.validate(mobNumber);
