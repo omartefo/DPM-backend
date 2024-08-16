@@ -116,7 +116,18 @@ exports.me = catchAsync(async (req, res, next) => {
 
 exports.getUser = catchAsync(async (req, res, next) => {
 	const userId = req.params.id;
-	const user = await User.findByPk(userId);
+	const user = await User.findByPk(userId, {
+		attributes: {
+			exclude: ['password', 'confirmationCode', 'passwordResetToken', 'passwordResetExpires'],
+		},
+		include: [
+			{ 
+				model: UserCompany,
+				attributes: ['companyId', 'name', 'commercialRegNumber', 'address', 'totalEmployees'],
+				required: false 
+			}
+		]
+	});
 
 	if (!user) return next(new AppError('No record found with given Id', 404));
 
