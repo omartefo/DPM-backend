@@ -333,7 +333,7 @@ validateAdmin = (user) => {
 	const schema = Joi.object({
 		name: Joi.string().required().min(3),
 		email: Joi.string().required().email(),
-		mobileNumber: Joi.string().required().min(8).max(8),
+		mobileNumber: Joi.string().required().min(10).max(10),
 		type: Joi.string().required().valid(constants.userTypes.SUPER_ADMIN, constants.userTypes.ADMIN, constants.userTypes.EMPLOYEE),
 		password: Joi.string().required().min(8),
 		fromAdmin: Joi.boolean().default(false),

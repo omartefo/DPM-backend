@@ -44,11 +44,13 @@ exports.adminLogin = catchAsync(async (req, res, next) => {
 	const { error } = validate(req.body);
 	if (error) return next(new AppError(error.message, 400));
 
-	let user = await User.findOne({ where: {
+	let user = await User.findOne({
+		attributes: ['userId', 'name', 'email', 'password', 'type', 'isAccountActive', 'isEmailVerified'],
+		where: {
 			email: req.body.email,
 			[Op.or]: [
 				{ type: constants.userTypes.SUPER_ADMIN }, { type: constants.userTypes.ADMIN }, { type: constants.userTypes.EMPLOYEE }
-			]
+			],
 		}
 	});
 
