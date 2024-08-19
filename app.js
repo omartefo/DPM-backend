@@ -24,7 +24,7 @@ const tenderRouter = require('./routes/tenderRoutes');
 const bidsRouter = require('./routes/biddingRoutes');
 const notificationRouter = require('./routes/notificationRoutes');
 const downloadsRouter = require('./routes/downloadCenterRoutes');
-
+const otpCodeRouter = require('./routes/otpRoutes.js');
 
 app.get('/', (req, res) => {
 	res.status(200).send('Welcome to Doha Project Management(DPM) backend.');
@@ -38,6 +38,7 @@ app.use('/api/tenders', tenderRouter);
 app.use('/api/bids', bidsRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/downloads', downloadsRouter);
+app.use('/api/otpCodes', otpCodeRouter);
 
 // Handling unhandled routes
 app.all('*', (req, res, next) => {

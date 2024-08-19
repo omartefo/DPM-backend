@@ -12,7 +12,7 @@ const { Bidding } = require('../models/biddingModel');
 // Utils
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
-const { generateRandomFourDigits, sendSMS, sendEmail } = require('../utils/helpers');
+const { sendEmail } = require('../utils/helpers');
 const constants = require('../utils/constants');
 
 prepareWhere = (userType) => {
@@ -259,23 +259,6 @@ exports.verifyUser = catchAsync(async(req, res, next) => {
 	});
 });
 
-exports.mobileOTPVerification = catchAsync(async(req, res, next) => {
-	const countryCode = '+92';
-	const { error } = validateMobileNumber(req.body);
-	if (error) return next(new AppError(error.message, 400));
-
-	const verificationCode = generateRandomFourDigits();
-	const text = `Your DPM Verification code is:\n${verificationCode}`;
-	const mobileNumber = `${countryCode}${req.body.mobileNumber}`;
-
-	await sendSMS(mobileNumber, text);
-
-	res.status(200).json({
-		status: 'success',
-		message: 'SMS sent'
-	});
-});
-
 exports.sendEmailToUser = catchAsync( async(req, res, next) => {
 	const { subject, message, name, email } = req.body;
 
@@ -299,14 +282,6 @@ exports.sendEmailToUser = catchAsync( async(req, res, next) => {
 		message: 'Email sent'
 	});
 });
-
-validateMobileNumber = (mobNumber) => {
-	const schema = Joi.object({
-		mobileNumber: Joi.string().required().min(10).max(10)
-	});
-
-	return schema.validate(mobNumber);
-}
 
 validateNonClientUser = (user) => {
 	const schema = Joi.object({
