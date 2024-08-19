@@ -6,7 +6,6 @@ const { restrictTo } = require('../middlewares/permissions');
 
 router.route('/otpVerification').post(userController.mobileOTPVerification);
 router.route('/sendEmail').post(userController.sendEmailToUser);
-router.route('/createSuperAdmin').post(userController.createSuperAdmin);
 router.route('/me').get(auth, userController.me);
 
 router.route('/')
