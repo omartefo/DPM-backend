@@ -12,6 +12,7 @@ const { User } = require('../models/userModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const { sendEmail } = require('../utils/helpers');
+const constants = require('../utils/constants');
 
 exports.login = catchAsync(async (req, res, next) => {
 	const { error } = validate(req.body);
@@ -46,7 +47,7 @@ exports.adminLogin = catchAsync(async (req, res, next) => {
 	let user = await User.findOne({ where: {
 			email: req.body.email,
 			[Op.or]: [
-				{ type: 'Super_Admin' }, { type: 'Admin' }, { type: 'Employee' }
+				{ type: constants.userTypes.SUPER_ADMIN }, { type: constants.userTypes.ADMIN }, { type: constants.userTypes.EMPLOYEE }
 			]
 		}
 	});

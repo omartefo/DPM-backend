@@ -13,6 +13,7 @@ const { User } = require("../models/userModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const { sendEmail } = require("../utils/helpers");
+const constants = require("../utils/constants");
 
 exports.getAllBids = catchAsync(async (req, res, next) => {
 	const search = req.query;
@@ -107,7 +108,7 @@ exports.participateInBidding = catchAsync(async (req, res, next) => {
 	}
 	
 	const user = await User.findByPk(req.body.userId);
-	if (!['Consultant', 'Contractor', 'Supplier'].includes(user.type)) {
+	if (![constants.userTypes.CONSULTANT, constants.userTypes.CONTRACTOR, constants.userTypes.SUPPLIER].includes(user.type)) {
 		return next(new AppError("You don't have permission to perform this actions", 403));
 	}
 

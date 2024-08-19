@@ -13,6 +13,7 @@ const { Bidding } = require('../models/biddingModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const { generateRandomFourDigits, sendSMS, sendEmail } = require('../utils/helpers');
+const constants = require('../utils/constants');
 
 prepareWhere = (userType) => {
 	let operator = 'eq';
@@ -140,7 +141,21 @@ exports.getUser = catchAsync(async (req, res, next) => {
 });
 
 exports.createUser = catchAsync(async (req, res, next) => {
-	validateRequestData(req, next);
+	const userType = req.body.type;
+
+	if (userType === constants.userTypes.CLIENT) {
+		const { error } = validate(req.body);
+		if (error) return next(new AppError(error.message, 400));
+	}
+	else if ([constants.userTypes.ADMIN, constants.userTypes.EMPLOYEE].includes(userType)) {
+		const { error } = validateAdmin(req.body);
+		if (error) return next(new AppError(error.message, 400));
+	}
+	else
+	{
+		const { error } = validateNonClientUser(req.body);
+		if (error) return next(new AppError(error.message, 400));
+	}
 
 	const token = jwt.sign({ email: req.body.email }, process.env.JWT_PRIVATE_KEY);
 
@@ -150,20 +165,26 @@ exports.createUser = catchAsync(async (req, res, next) => {
 	const encryptedPassword = await bcrypt.hash(password, salt);
 
 	const user = await User.create({ 
-		name, email, mobileNumber,
+		name,
+		email,
+		mobileNumber,
 		isAdmin: isAdmin || false,
 		password: encryptedPassword, 
-		type, confirmationCode: token 
+		type,
+		confirmationCode: token
 	});
 
-	if (['Consultant', 'Supplier', 'Contractor'].includes(type)) {
+	if ([constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR].includes(type)) {
 		const { companyName, commercialRegNumber, address, totalEmployees } = req.body;
 
 		const company = await UserCompany.create({
-			name: companyName, commercialRegNumber, address, totalEmployees
+			name: companyName, 
+			commercialRegNumber, 
+			address,
+			totalEmployees
 		});
 
-		user.companyId = company.dataValues.companyId;
+		user.companyId = company.companyId;
 
 		await user.save();
 	}
@@ -182,33 +203,6 @@ exports.createUser = catchAsync(async (req, res, next) => {
 		status: 'success',
 		data: user.userId,
 		message: 'User was registered successfully! Please check your email'
-	});
-});
-
-exports.createSuperAdmin = catchAsync(async (req, res, next) => {
-	const { error } = validateAdmin(req.body);
-	if (error) return next(new AppError(error.message, 400));
-
-	const { name, email, mobileNumber, password } = req.body;
-
-	const salt = await bcrypt.genSalt(10);
-	const encryptedPassword = await bcrypt.hash(password, salt);
-
-	const user = await User.create({ 
-		name, 
-		email, 
-		mobileNumber, 
-		password: encryptedPassword,
-		type: 'Super_Admin',
-		isAccountActive: true,
-		isEmailVerified: true
-	});
-	
-	res.status(201).json({
-		status: 'success',
-		data: {
-			user
-		}
 	});
 });
 
@@ -247,7 +241,7 @@ exports.verifyUser = catchAsync(async(req, res, next) => {
 	if (!user) return next(new AppError('User not found', 404));
 
 	// Supplier and Contractor gets active when admin approve it, other users account get active as their email is verified;
-	if (user.dataValues.type === 'Supplier' || user.dataValues.type === 'Contractor') {
+	if ( [constants.userTypes.EMPLOYEE, constants.userTypes.CONTRACTOR].includes(user.dataValues.type)) {
 		user.isEmailVerified = true;
 	}
 	else {
@@ -274,16 +268,11 @@ exports.mobileOTPVerification = catchAsync(async(req, res, next) => {
 	const text = `Your DPM Verification code is:\n${verificationCode}`;
 	const mobileNumber = `${countryCode}${req.body.mobileNumber}`;
 
-	console.log('Mobile number for OTP =', mobileNumber);
-
-	const output = await sendSMS(mobileNumber, text);
+	await sendSMS(mobileNumber, text);
 
 	res.status(200).json({
 		status: 'success',
-		data: {
-			code: verificationCode,
-			text: JSON.parse(output.text)
-		}
+		message: 'SMS sent'
 	});
 });
 
@@ -303,31 +292,13 @@ exports.sendEmailToUser = catchAsync( async(req, res, next) => {
 		html: messageWithUserInfo
 	};
 
-	const emailResp = await sendEmail(options);
+	await sendEmail(options);
 
 	res.status(200).json({
 		status: 'success',
-		data: {
-			emailResp
-		}
+		message: 'Email sent'
 	});
 });
-
-validateRequestData = (req, next) => {
-	if (req.body.type === 'Client') {
-		const { error } = validate(req.body);
-		if (error) return next(new AppError(error.message, 400));
-	}
-	else if (['Admin', 'Employee'].includes(req.body.type)) {
-		const { error } = validateAdmin(req.body);
-		if (error) return next(new AppError(error.message, 400));
-	}
-	else
-	{
-		const { error } = validateNonClientUser(req.body);
-		if (error) return next(new AppError(error.message, 400));
-	}
-}
 
 validateMobileNumber = (mobNumber) => {
 	const schema = Joi.object({
@@ -341,9 +312,9 @@ validateNonClientUser = (user) => {
 	const schema = Joi.object({
 		name: Joi.string().required().min(3),
 		email: Joi.string().required().email(),
-		mobileNumber: Joi.string().required().min(8).max(8),
+		mobileNumber: Joi.string().required().min(10).max(10),
 		password: Joi.string().required().min(8),
-		type: Joi.string().required().valid('Supplier', 'Contractor', 'Consultant'),
+		type: Joi.string().required().valid(constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR),
 
 		// User Company Info
 		companyName: Joi.string().required(),
@@ -363,7 +334,7 @@ validateAdmin = (user) => {
 		name: Joi.string().required().min(3),
 		email: Joi.string().required().email(),
 		mobileNumber: Joi.string().required().min(8).max(8),
-		type: Joi.string().required().valid('Super_Admin', 'Admin', 'Employee'),
+		type: Joi.string().required().valid(constants.userTypes.SUPER_ADMIN, constants.userTypes.ADMIN, constants.userTypes.EMPLOYEE),
 		password: Joi.string().required().min(8),
 		fromAdmin: Joi.boolean().default(false),
 	});

@@ -3,12 +3,18 @@ const router = express.Router();
 const downloadCenterController = require('../controllers/downloadCenterController');
 const { auth } = require('../middlewares/auth');
 const { restrictTo } = require('../middlewares/permissions');
+const constants = require('../utils/constants');
 
 router.route('/')
 	.get(auth, downloadCenterController.getAllDownloads)
-	.post(auth, restrictTo('Super_Admin', 'Admin'), downloadCenterController.uploadDocs, downloadCenterController.createDownloadItem);
+	.post(
+		auth, 
+		restrictTo(constants.userTypes.SUPER_ADMIN, constants.userTypes.ADMIN), 
+		downloadCenterController.uploadDocs, 
+		downloadCenterController.createDownloadItem
+	);
 
-router.use(auth, restrictTo('Super_Admin', 'Admin'));
+router.use(auth, restrictTo(constants.userTypes.SUPER_ADMIN, constants.userTypes.ADMIN));
 
 router.route('/:id')
 	.get(downloadCenterController.getDownloadItem)

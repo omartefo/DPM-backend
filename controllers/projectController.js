@@ -9,6 +9,7 @@ const { User } = require('../models/userModel');
 // Utils
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const constants = require('../utils/constants');
 
 exports.getAllProjects = catchAsync(async (req, res, next) => {
 	const { type, userId } = req.user;
@@ -33,7 +34,7 @@ exports.getAllProjects = catchAsync(async (req, res, next) => {
 	}
 
 	// Project is always associated with a client, no project without a client;
-	if (type === 'Client') {		
+	if (type === constants.userTypes.CLIENT) {		
 		where.clientId = userId;
 	}
 
@@ -79,7 +80,7 @@ exports.getProject = catchAsync(async (req, res, next) => {
 exports.createProject = catchAsync(async (req, res, next) => {
 	const { type: userType } = req.user;
 
-	if (!['Client', 'Super_Admin'].includes(userType)) {
+	if (![constants.userTypes.CLIENT, constants.userTypes.SUPER_ADMIN].includes(userType)) {
 		return next(new AppError("You don't have the permission to create project.", 403));
 	}
 
@@ -104,7 +105,7 @@ exports.createProject = catchAsync(async (req, res, next) => {
 		clientId
 	});
 
-	if (userType === 'Super_Admin') {
+	if (userType === constants.userTypes.SUPER_ADMIN) {
 		project.isApproved = true;
 		await project.save();
 	}
@@ -148,7 +149,7 @@ exports.deleteProject = catchAsync(async (req, res, next) => {
 exports.approveProject = catchAsync(async (req, res, next) => {
 	const { type: userType } = req.user;
 
-	const adminUsers = ['Super_Admin', 'Admin', 'Employee'];
+	const adminUsers = [constants.userTypes.SUPER_ADMIN, constants.userTypes.ADMIN, constants.userTypes.EMPLOYEE];
 	if (!adminUsers.includes(userType)) return next(new AppError("You don't have the permission to approve project."), 403);
 
 	const projectId = req.params.id;

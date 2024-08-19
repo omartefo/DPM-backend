@@ -4,6 +4,7 @@ const { UserNotification, validate } = require('../models/notificationModel');
 // Utils
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const constants = require('../utils/constants');
 
 exports.getAllNotifications = catchAsync(async (req, res, next) => {
 	const user = req.user;
@@ -22,7 +23,7 @@ exports.getAllNotifications = catchAsync(async (req, res, next) => {
 
 	const offset = (page - 1) * limit;
 
-	if (!['Super_Admin', 'Admin', 'Employee'].includes(user.type)) {
+	if (![constants.userTypes.SUPER_ADMIN, constants.userTypes.ADMIN, constants.userTypes.EMPLOYEE].includes(user.type)) {
 		where.userId = user.userId;
 	}
 

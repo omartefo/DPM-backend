@@ -8,7 +8,6 @@ const { User } = require('../models/userModel');
 // Utils
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
-const { sendEmail } = require('../utils/helpers');
 const uploadToS3 = require('../utils/s3Upload');
 
 const upload = multer({
@@ -56,7 +55,6 @@ exports.getDownloadItem = catchAsync(async (req, res, next) => {
 });
 
 exports.createDownloadItem = catchAsync(async (req, res, next) => {
-	console.log(req.body.description, req.body.documents)
 	const { error } = validate(req.body);
 	if (error) return next(new AppError(error.message, 400));
 

@@ -3,16 +3,39 @@ const router = express.Router();
 const biddingController = require('../controllers/biddingController');
 const { auth } = require('../middlewares/auth');
 const { restrictTo } = require('../middlewares/permissions');
+const constants = require('../utils/constants');
 
 router.route('/tender/:id').get(biddingController.getBiddersByTenderId);
 router.route('/getBidsByUser').get(auth, biddingController.getBidsByUserId);
 
 router.route('/')
-	.get(auth, restrictTo('Super_Admin', 'Admin', 'Employee'), biddingController.getAllBids)
-	.post(auth, restrictTo('Consultant', 'Contractor', 'Supplier'), biddingController.participateInBidding);
+	.get(
+		auth, 
+		restrictTo(constants.userTypes.SUPER_ADMIN, constants.userTypes.ADMIN, constants.userTypes.EMPLOYEE), 
+		biddingController.getAllBids
+	)
+	.post(
+		auth,
+		restrictTo(constants.userTypes.CONSULTANT, constants.userTypes.CONTRACTOR, constants.userTypes.SUPPLIER),
+		biddingController.participateInBidding
+	);
 
 router.route('/:id')
-	.patch(auth, restrictTo('Consultant', 'Contractor', 'Supplier', 'Super_Admin', 'Admin'), biddingController.updateBid)
-	.delete(auth, restrictTo('Super_Admin', 'Admin'), biddingController.deleteBid)
+	.patch(
+		auth,
+		restrictTo(
+			constants.userTypes.SUPER_ADMIN, 
+			constants.userTypes.ADMIN,
+			constants.userTypes.CONSULTANT,
+			constants.userTypes.CONTRACTOR,
+			constants.userTypes.SUPPLIER
+		),
+		biddingController.updateBid
+	)
+	.delete(
+		auth, 
+		restrictTo(constants.userTypes.SUPER_ADMIN, constants.userTypes.ADMIN), 
+		biddingController.deleteBid
+	)
 
 module.exports = router;
