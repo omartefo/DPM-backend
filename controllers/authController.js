@@ -18,11 +18,12 @@ exports.login = catchAsync(async (req, res, next) => {
 	const { error } = validate(req.body);
 	if (error) return next(new AppError(error.message, 400));
 
-	let user = await User.findOne({ where: { email: req.body.email } });
+	let user = await User.findOne({
+		attributes: ['userId', 'name', 'email', 'password', 'type', 'isAccountActive', 'isEmailVerified'],
+		where: { email: req.body.email, type: req.body.type }
+	});
+	
 	if (!user) return next(new AppError('Invalid email or password.', 400));
-
-	// Check if user type is the same as the one stored against email
-	if (user.type !== req.body.type) return next(new AppError(`User of type ${req.body.type} does not exists`, 400));
 
 	// Check if user account is active
 	if (!user.isAccountActive || !user.isEmailVerified) return next(new AppError('User account is not active', 400));
@@ -30,9 +31,7 @@ exports.login = catchAsync(async (req, res, next) => {
 	const isValid = await bcrypt.compare(req.body.password, user.password);
 	if (!isValid) return next(new AppError('Invalid email or password.', 400));
 
-	const token  = jwt.sign({ userId: user.userId, name: user.name, email: user.email, type: user.type }, process.env.JWT_PRIVATE_KEY, {
-		expiresIn: process.env.JWT_EXPIRY
-	});
+	const token = generateToken(user);
 
 	res.status(200).json({
 		status: 'success',
@@ -62,9 +61,7 @@ exports.adminLogin = catchAsync(async (req, res, next) => {
 	// Check if user account is active
 	if (!user.isAccountActive || !user.isEmailVerified) return next(new AppError('User account is not active', 400));
 
-	const token  = jwt.sign({ userId: user.userId, name: user.name, email: user.email, type: user.type }, process.env.JWT_PRIVATE_KEY, {
-		expiresIn: process.env.JWT_EXPIRY
-	});
+	const token = generateToken(user);
 
 	res.status(200).json({
 		status: 'success',
@@ -142,3 +139,18 @@ function validate(req) {
 
 	return schema.validate(req); 
 }
+
+function generateToken(user) {
+	const userData = {
+		userId: user.userId,
+		name: user.name,
+		email: user.email,
+		type: user.type
+	};
+  
+	const JWTOptions = {
+	  expiresIn: process.env.JWT_EXPIRY,
+	};
+  
+	return jwt.sign(userData, process.env.JWT_PRIVATE_KEY, JWTOptions);
+  }
