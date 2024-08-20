@@ -15,7 +15,7 @@ const { User } = require('../models/userModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const { sendEmail } = require('../utils/helpers');
-const uploadToS3 = require('../utils/s3Upload');
+const uploadToBlob = require('../utils/uploadToAzure');
 
 async function markTenderAsClosed(tenderId) {
 	const tenderToClose = await Tender.findByPk(tenderId);
@@ -94,7 +94,7 @@ exports.createTender = catchAsync(async (req, res, next) => {
 
 	if (req.files) {
 		const promises = [];
-		req.files.forEach(file => promises.push(uploadToS3(file, 'tender-documents')))
+		req.files.forEach(file => promises.push(uploadToBlob(file)))
 		req.body.documents = await Promise.all(promises);
 	}
 

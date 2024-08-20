@@ -8,7 +8,7 @@ const { User } = require('../models/userModel');
 // Utils
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
-const uploadToS3 = require('../utils/s3Upload');
+const uploadToBlob = require('../utils/uploadToAzure');
 
 const upload = multer({
 	dest: 'temp/'
@@ -60,7 +60,7 @@ exports.createDownloadItem = catchAsync(async (req, res, next) => {
 
 	if (req.files) {
 		const promises = [];
-		req.files.forEach(file => promises.push(uploadToS3(file, 'downloads')))
+		req.files.forEach(file => promises.push(uploadToBlob(file)))
 		req.body.documents = await Promise.all(promises);
 	}
 
