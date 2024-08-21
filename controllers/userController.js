@@ -163,6 +163,18 @@ exports.createUser = catchAsync(async (req, res, next) => {
 
 	const salt = await bcrypt.genSalt(10);
 	const encryptedPassword = await bcrypt.hash(password, salt);
+	let company;
+
+	if ([constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR].includes(type)) {
+		const { companyName, commercialRegNumber, address, totalEmployees } = req.body;
+
+		company = await UserCompany.create({
+			name: companyName, 
+			commercialRegNumber, 
+			address,
+			totalEmployees
+		});
+	}
 
 	const user = await User.create({ 
 		name,
@@ -174,18 +186,8 @@ exports.createUser = catchAsync(async (req, res, next) => {
 		confirmationCode: token
 	});
 
-	if ([constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR].includes(type)) {
-		const { companyName, commercialRegNumber, address, totalEmployees } = req.body;
-
-		const company = await UserCompany.create({
-			name: companyName, 
-			commercialRegNumber, 
-			address,
-			totalEmployees
-		});
-
+	if (company) {
 		user.companyId = company.companyId;
-
 		await user.save();
 	}
 

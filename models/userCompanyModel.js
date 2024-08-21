@@ -11,7 +11,8 @@ const UserCompany = db.define('company',
 	},
 	name: {
 		type: Sequelize.STRING,
-		allowNull: false
+		allowNull: false,
+		unique: true
 	},
 	commercialRegNumber: {
 		type: Sequelize.STRING,
