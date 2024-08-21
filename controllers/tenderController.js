@@ -15,7 +15,7 @@ const { User } = require('../models/userModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const { sendEmail } = require('../utils/helpers');
-const uploadToBlob = require('../utils/uploadToAzure');
+const { uploadToBlob } = require('../utils/uploadToAzure');
 
 async function markTenderAsClosed(tenderId) {
 	const tenderToClose = await Tender.findByPk(tenderId);

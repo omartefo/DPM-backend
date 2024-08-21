@@ -8,7 +8,7 @@ const { User } = require('../models/userModel');
 // Utils
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
-const uploadToBlob = require('../utils/uploadToAzure');
+const { deleteBlob, uploadToBlob } = require('../utils/uploadToAzure');
 
 const upload = multer({
 	dest: 'temp/'
@@ -96,9 +96,22 @@ exports.updateDownloadItem = catchAsync(async (req, res, next) => {
 
 exports.deleteDownloadItem = catchAsync(async (req, res, next) => {
 	const downloadId = req.params.id;
-	const downloadItem = await DownloadCenter.destroy({ where: { downloadId }});
+	const downloadItem = await DownloadCenter.findByPk(downloadId, {
+		attributes: ['documents']
+	});
 
 	if (!downloadItem) return next(new AppError('No record found with given Id', 404));
+
+	const blobNames = downloadItem.documents.map(elem => {
+		const items = elem.split('/');
+		return items[items.length - 1]
+	});
+
+	for (let blob of blobNames) {
+		await deleteBlob(blob);
+	}
+
+	await DownloadCenter.destroy({ where: { downloadId }});
 
 	res.status(204).json({
 		status: 'success',
