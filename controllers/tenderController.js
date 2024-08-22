@@ -30,7 +30,11 @@ const upload = multer({
 	dest: 'temp/'
 });
 
-exports.uploadDocs = upload.array('documents', 100);
+exports.uploadDocs = upload.fields([
+	{ name: 'document1', maxCount: 1 },
+	{ name: 'document2', maxCount: 1 },
+	{ name: 'document3', maxCount: 1 }
+  ]);
 
 exports.getAllTenders = catchAsync(async (req, res, next) => {
 	const search = req.query;
@@ -91,14 +95,33 @@ exports.getTender = catchAsync(async (req, res, next) => {
 exports.createTender = catchAsync(async (req, res, next) => {
 	const { error } = validate(req.body);
 	if (error) return next(new AppError(error.message, 400));
+	let document1, document2, document3;
 
-	if (req.files) {
-		const promises = [];
-		req.files.forEach(file => promises.push(uploadToBlob(file)))
-		req.body.documents = await Promise.all(promises);
+	const files = [];
+	const promises = [];
+	for (let key of Object.keys(req.files)) {
+		files.push({ fileName: key, value: req.files[key][0] });
+	}
+	
+	files.forEach(file => promises.push(uploadToBlob(file.value)))
+	const azureFileUrls = await Promise.all(promises);
+
+	for (let i=0; i<files.length; i++) {
+		const key = files[i].fileName;
+		const value = azureFileUrls[i];
+
+		if (key === 'document1') {
+			document1 = value;
+		}
+		if (key === 'document2') {
+			document2 = value;
+		}
+		if (key === 'document3') {
+			document3 = value;
+		}
 	}
 
-	const { tenderNumber, type, openingDate, closingDate, minimumPrice, maximumPrice, location, description, projectId, documents } = req.body;
+	const { tenderNumber, type, openingDate, closingDate, minimumPrice, maximumPrice, location, description, projectId } = req.body;
 
 	const tender = await Tender.create({ 
 		tenderNumber,
@@ -110,7 +133,9 @@ exports.createTender = catchAsync(async (req, res, next) => {
 		location, 
 		description,
 		projectId,
-		documents
+		document1,
+		document2,
+		document3,
 	});
 
 	const tenderId = tender.dataValues.tenderId;

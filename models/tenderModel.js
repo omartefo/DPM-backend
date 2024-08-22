@@ -51,19 +51,9 @@ const Tender = db.define('tender',
 		allowNull: false,
 		defaultValue: 'Open'
 	},
-	documents: {
-		type: Sequelize.STRING,
-		get() {
-			if (this.getDataValue('documents')) {
-				return this.getDataValue('documents').split(';');
-			}
-		},
-		set(val) {
-			if (val) {
-				this.setDataValue('documents', val.join(';'));
-			}
-		},
-	},
+	document1: Sequelize.STRING,
+	document2: Sequelize.STRING,
+	document3: Sequelize.STRING,
 	projectId: {
 		type: Sequelize.INTEGER,
 		allowNull: false,
@@ -95,7 +85,9 @@ function validateTender(tender) {
 		location: Joi.string().required(),
 		description: Joi.string().required().max(1000),
 		projectId: Joi.number().required(),
-		documents: Joi.string().allow(''),
+		document1: Joi.string().allow(''),
+		document2: Joi.string().allow(''),
+		document3: Joi.string().allow(''),
 	});
 
 	return schema.validate(tender);
