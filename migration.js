@@ -13,7 +13,7 @@ module.exports = function() {
 	User.hasMany(Project, { constraints: true, onDelete: 'RESTRICT', foreignKey: 'clientId' });
 	Project.belongsTo(User, { foreignKey: 'clientId' });
 
-	Project.hasMany(Tender, { constraints: true, onDelete: 'RESTRICT', foreignKey: 'projectId' });
+	Project.hasMany(Tender, { constraints: true, onDelete: 'SET NULL', foreignKey: 'projectId' });
 	Tender.belongsTo(Project, { foreignKey: 'projectId' });
 
 	User.hasOne(Tender, { constraints: true, onDelete: 'RESTRICT', foreignKey: 'awardedTo' });

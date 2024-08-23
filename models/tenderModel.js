@@ -57,11 +57,11 @@ const Tender = db.define('tender',
 	document3: Sequelize.STRING,
 	projectId: {
 		type: Sequelize.INTEGER,
-		allowNull: false,
+		allowNull: true,
 		references: {
 			model: Project,
 			key: 'projectId',
-			onDelete: 'RESTRICT'
+			onDelete: 'SET NULL'
 		}
 	},
 	awardedTo: {

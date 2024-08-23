@@ -14,6 +14,7 @@ const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const { sendEmail } = require('../utils/helpers');
 const constants = require('../utils/constants');
+const { Project } = require('../models/projectsModel');
 
 prepareWhere = (userType) => {
 	let operator = 'eq';
@@ -224,6 +225,8 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 
 exports.deleteUser = catchAsync(async (req, res, next) => {
 	const userId = req.params.id;
+	
+	await Project.destroy({ where: { clientId: userId }});
 	const user = await User.destroy({ where: { userId }});
 
 	if (!user) return next(new AppError('No record found with given Id', 404));
