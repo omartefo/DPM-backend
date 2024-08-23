@@ -34,6 +34,7 @@ router.route('/:id')
 	.get(tenderControler.getTender)
 	.patch(
 		restrictTo(constants.userTypes.SUPER_ADMIN, constants.userTypes.ADMIN),
+		tenderControler.uploadDocs,
 		tenderControler.updateTender
 	)
 	.delete(

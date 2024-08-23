@@ -95,33 +95,23 @@ exports.getTender = catchAsync(async (req, res, next) => {
 exports.createTender = catchAsync(async (req, res, next) => {
 	const { error } = validate(req.body);
 	if (error) return next(new AppError(error.message, 400));
-	let document1, document2, document3;
 
-	const files = [];
-	const promises = [];
-	for (let key of Object.keys(req.files)) {
-		files.push({ fileName: key, value: req.files[key][0] });
-	}
-	
-	files.forEach(file => promises.push(uploadToBlob(file.value)))
-	const azureFileUrls = await Promise.all(promises);
+	await setTenderDocuments(req);
 
-	for (let i=0; i<files.length; i++) {
-		const key = files[i].fileName;
-		const value = azureFileUrls[i];
-
-		if (key === 'document1') {
-			document1 = value;
-		}
-		if (key === 'document2') {
-			document2 = value;
-		}
-		if (key === 'document3') {
-			document3 = value;
-		}
-	}
-
-	const { tenderNumber, type, openingDate, closingDate, minimumPrice, maximumPrice, location, description, projectId } = req.body;
+	const {
+		tenderNumber,
+		type,
+		openingDate,
+		closingDate,
+		minimumPrice,
+		maximumPrice,
+		location,
+		description,
+		projectId,
+		document1,
+		document2,
+		document3
+	} = req.body;
 
 	const tender = await Tender.create({ 
 		tenderNumber,
@@ -154,6 +144,9 @@ exports.createTender = catchAsync(async (req, res, next) => {
 
 exports.updateTender = catchAsync(async (req, res, next) => {
 	const tenderId = req.params.id;
+	
+	await setTenderDocuments(req);
+
 	const tender = await Tender.update(req.body, { where: { tenderId }});
 
 	if (!tender) return next(new AppError('No record found with given Id', 404));
@@ -261,3 +254,34 @@ exports.tenderBids = catchAsync(async (req, res, next) => {
 		}
 	});
 });
+
+async function setTenderDocuments(req) {
+	console.log('Files =', req.files);
+
+	if (req.files) {
+		const files = [];
+		const promises = [];
+
+		for (let key of Object.keys(req.files)) {
+			files.push({ fileName: key, value: req.files[key][0] });
+		}
+		
+		files.forEach(file => promises.push(uploadToBlob(file.value)))
+		const azureFileUrls = await Promise.all(promises);
+	
+		for (let i=0; i<files.length; i++) {
+			const key = files[i].fileName;
+			const value = azureFileUrls[i];
+	
+			if (key === 'document1') {
+				req.body.document1 = value;
+			}
+			if (key === 'document2') {
+				req.body.document2 = value;
+			}
+			if (key === 'document3') {
+				req.body.document3 = value;
+			}
+		}
+	}
+}
