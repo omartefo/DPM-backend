@@ -26,15 +26,17 @@ async function markTenderAsClosed(tenderId) {
 	}
 }
 
+// Tender document max file size is 100MB
 const upload = multer({
-	dest: 'temp/'
+	dest: 'temp/',
+    limits: { fileSize: 100 * 1024 * 1024 },
 });
 
 exports.uploadDocs = upload.fields([
 	{ name: 'document1', maxCount: 1 },
 	{ name: 'document2', maxCount: 1 },
 	{ name: 'document3', maxCount: 1 }
-  ]);
+]);
 
 exports.getAllTenders = catchAsync(async (req, res, next) => {
 	const search = req.query;
