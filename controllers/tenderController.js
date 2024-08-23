@@ -244,10 +244,21 @@ exports.changeTenderStatus = catchAsync(async (req, res, next) => {
 exports.tenderBids = catchAsync(async (req, res, next) => {
 	const tenderId = req.params.id;
 
-	const bids = await Bidding.findAll({ 
-		where: { tenderId, status: { [Op.ne]: null } }, 
-		include: { model: User, include: { model: UserCompany, required: false }
-	}});
+	const bids = await Bidding.findAll(
+		{
+			attributes: ['priceInNumbers', 'durationInNumbers', 'status'],
+			where: { tenderId, status: { [Op.ne]: null } }, 
+			include: { 
+				model: User,
+				attributes: ['userId'],
+				include: {
+					attributes: ['name'],
+					model: UserCompany,
+					required: false 
+				}
+			},
+			order: [['priceInNumbers', 'ASC']]
+		});
 
 	res.status(200).json({
 		status: 'success',
