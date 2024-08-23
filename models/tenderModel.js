@@ -16,7 +16,8 @@ const Tender = db.define('tender',
 	},
 	tenderNumber: {
 		type: Sequelize.STRING,
-		allowNull: false
+		allowNull: false,
+		unique: true
 	},
 	type: {
 		type: Sequelize.STRING,
