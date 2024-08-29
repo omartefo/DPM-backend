@@ -1,6 +1,5 @@
 // 3rd party packages
 const multer = require('multer');
-const schedule = require('node-schedule');
 const { Op } = require('sequelize');
 
 // Models
@@ -16,15 +15,8 @@ const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const { sendEmail } = require('../utils/helpers');
 const { uploadToBlob } = require('../utils/uploadToAzure');
-
-async function markTenderAsClosed(tenderId) {
-	const tenderToClose = await Tender.findByPk(tenderId);
-	
-	if (tenderToClose) {
-		tenderToClose.status = 'Under Evaluation';
-		await tenderToClose.save();
-	}
-}
+const constants = require('../utils/constants');
+const { scheduleTenderCronJob } = require('../jobs');
 
 // Tender document max file size is 100MB
 const upload = multer({
@@ -130,11 +122,7 @@ exports.createTender = catchAsync(async (req, res, next) => {
 		document3,
 	});
 
-	const tenderId = tender.dataValues.tenderId;
-
-	schedule.scheduleJob(closingDate, async function() {
-		await markTenderAsClosed(tenderId);
-	}.bind(null, tenderId));
+	await scheduleTenderCronJob(tender.tenderId, closingDate);
 	
 	res.status(201).json({
 		status: 'success',
@@ -150,8 +138,12 @@ exports.updateTender = catchAsync(async (req, res, next) => {
 	await setTenderDocuments(req);
 
 	const tender = await Tender.update(req.body, { where: { tenderId }});
-
 	if (!tender) return next(new AppError('No record found with given Id', 404));
+
+	const { closingDate } = req.body;
+	if (closingDate) {
+		await scheduleTenderCronJob(tenderId, closingDate);
+	}
 
 	res.status(200).json({
 		status: 'success',
@@ -182,7 +174,7 @@ exports.awardTender = catchAsync(async (req, res, next) => {
 	const company = req.body.company;
 
 	const user = await User.findByPk(userId);
-	const tender = await Tender.update({ awardedTo: userId, status: `Awarded to ${company}`}, { where: { tenderId }});
+	const tender = await Tender.update({ awardedTo: userId, status: `${constants.tenderStatuses.AWARDED} to ${company}`}, { where: { tenderId }});
 
 	const emailContent = `Congratulations, we are pleased to let you know that your company "${company}" has been selected for project`;
 	const emailOptions = {
@@ -208,7 +200,7 @@ exports.awardTender = catchAsync(async (req, res, next) => {
 exports.unAwardTender = catchAsync(async (req, res, next) => {
 	const tenderId = req.params.id;
 
-	const tender = await Tender.update({ awardedTo: null, status: `Under Evaluation`}, { where: { tenderId }});
+	const tender = await Tender.update({ awardedTo: null, status: constants.tenderStatuses.UNDER_EVALUATION}, { where: { tenderId }});
 		
 	res.status(200).json({
 		status: 'success',
@@ -225,8 +217,8 @@ exports.changeTenderStatus = catchAsync(async (req, res, next) => {
 	if (!tender) return next(new AppError('No record found with given Id', 404));
 	
 	const currentTime = new Date().getTime();
-	if (tender.status === 'Open' && (new Date(tender.closingDate).getTime() - currentTime) < 0) {
-		tender.status = 'Under Evaluation';
+	if (tender.status === constants.tenderStatuses.OPEN && (new Date(tender.closingDate).getTime() - currentTime) < 0) {
+		tender.status = constants.tenderStatuses.UNDER_EVALUATION;
 		await tender.save();
 	}
 	else {
@@ -269,8 +261,6 @@ exports.tenderBids = catchAsync(async (req, res, next) => {
 });
 
 async function setTenderDocuments(req) {
-	console.log('Files =', req.files);
-
 	if (req.files) {
 		const files = [];
 		const promises = [];

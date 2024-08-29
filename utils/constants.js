@@ -7,6 +7,11 @@ const constants = {
         SUPER_ADMIN: 'Super_Admin',
         ADMIN: 'Admin',
         EMPLOYEE: 'Employee',
+    },
+    tenderStatuses: {
+        OPEN: 'Open',
+        UNDER_EVALUATION: 'Under Evaluation',
+        AWARDED: 'Awarded'
     }
 };
 

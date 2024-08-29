@@ -5,6 +5,7 @@ const { Project } = require('./projectsModel');
 const { User } = require('./userModel');
 
 const db = require('../db');
+const constants = require('../utils/constants');
 
 const Tender = db.define('tender', 
 {
@@ -50,7 +51,7 @@ const Tender = db.define('tender',
 	status: {							// Tender status: 'Open', 'Under Evaluation', 'Awarded to xxx Company'
 		type: Sequelize.STRING,
 		allowNull: false,
-		defaultValue: 'Open'
+		defaultValue: constants.tenderStatuses.OPEN
 	},
 	document1: Sequelize.STRING,
 	document2: Sequelize.STRING,

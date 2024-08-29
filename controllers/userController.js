@@ -65,9 +65,6 @@ exports.getAllUsers = async (req, res, next) => {
 		}
 	}
 
-	// Don't query logged in user data
-	where.email = { [Op.ne]: req.user.email };
-
 	const offset = (page - 1) * limit;
 	
 	const users = await User.findAndCountAll({

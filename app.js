@@ -47,16 +47,4 @@ app.all('*', (req, res, next) => {
 
 app.use(globalErrorHandler);
 
-const sequelize = require('./db');
-
-// Run the migration to populate database with the tables
-require('./migration.js')();
-
-sequelize.sync().then(() => 
-{
-	const port = process.env.PORT || 3000;
-	app.listen(port, () => {
-		console.log(`Server is listening on port ${port}`);
-		console.log(`Connected to database ${process.env.DATABASE}`);
-	});
-})
+module.exports = app;
