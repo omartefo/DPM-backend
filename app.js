@@ -31,14 +31,14 @@ app.get('/', (req, res) => {
 });
 
 // API endPoints
-app.use('/api/users', userRouter);
-app.use('/api/auth', authRouter);
-app.use('/api/projects', projectRouter);
-app.use('/api/tenders', tenderRouter);
-app.use('/api/bids', bidsRouter);
-app.use('/api/notifications', notificationRouter);
-app.use('/api/downloads', downloadsRouter);
-app.use('/api/otpCodes', otpCodeRouter);
+app.use('/users', userRouter);
+app.use('/auth', authRouter);
+app.use('/projects', projectRouter);
+app.use('/tenders', tenderRouter);
+app.use('/bids', bidsRouter);
+app.use('/notifications', notificationRouter);
+app.use('/downloads', downloadsRouter);
+app.use('/otpCodes', otpCodeRouter);
 
 // Handling unhandled routes
 app.all('*', (req, res, next) => {
