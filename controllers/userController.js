@@ -323,7 +323,7 @@ sendVerifyAccountEmail = async (token, user) => {
 	let redirectUrl = `http://localhost:4200/confirm/${token}`;
 
 	if (process.env.NODE_ENV === 'production') {
-		redirectUrl = `https://dpm.herokuapp.com/confirm/${token}`;
+		redirectUrl = `http://dohapm.com/confirm/${token}`;
 	}
 	
 	const emailOptions = {
