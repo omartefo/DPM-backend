@@ -18,25 +18,34 @@ exports.sendSMS = async (number, text) => {
 }
 
 exports.sendEmail = async (options) => {
-	// Create a transporter. It is a service that will actually send email.
-	const transporter = nodeMailer.createTransport({
-		host: process.env.EMAIL_HOST,
-		secure: true,
-		port: 465,
-		auth: {
-			user: process.env.EMAIL_USER,
-			pass: process.env.EMAIL_PASSWORD
-		}
-	});
+	try {
+		console.log(process.env.EMAIL_USER, process.env.EMAIL_PASSWORD);
+		console.log('options =', options);
 
-	// Define the email options
-	const mailOptions = {
-		from: process.env.EMAIL_USER,
-		to: options.email,
-		subject: options.subject,
-		html: options.html
-	};
+		// Create a transporter. It is a service that will actually send email.
+		const transporter = nodeMailer.createTransport({
+			host: process.env.EMAIL_HOST,
+			secure: true,
+			port: 465,
+			auth: {
+				user: process.env.EMAIL_USER,
+				pass: process.env.EMAIL_PASSWORD
+			}
+		});
 
-	// Send the email
-	await transporter.sendMail(mailOptions);
+		// Define the email options
+		const mailOptions = {
+			from: process.env.EMAIL_USER,
+			to: options.email,
+			subject: options.subject,
+			html: options.html
+		};
+
+		// Send the email
+		await transporter.sendMail(mailOptions);
+	}
+	catch (error) {
+		console.log('Error while sending emaile...', error);
+		throw error;
+	}
 };
