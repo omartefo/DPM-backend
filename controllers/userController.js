@@ -196,7 +196,7 @@ exports.createUser = catchAsync(async (req, res, next) => {
 		await user.save();
 	}
 	else {
-		await sendVerifyAccountEmail(token, user);
+		// await sendVerifyAccountEmail(token, user);
 	}
 	
 	res.status(201).json({
