@@ -117,7 +117,7 @@ exports.participateInBidding = catchAsync(async (req, res, next) => {
 	if (moment(lastTenMinutes).isSameOrAfter(currentTime)) 
 	{
 		const scheduleEmailDate = new Date(lastTenMinutes);
-		const job = schedule.scheduleJob(scheduleEmailDate, async function() {
+		schedule.scheduleJob(scheduleEmailDate, async function() {
 			console.log(`Sending email at ${moment(scheduleEmailDate).format('M/D/YYYY, H:mm:ss')} to user ${user.name.toUpperCase()}`);
 
 			const emailOptions = {
