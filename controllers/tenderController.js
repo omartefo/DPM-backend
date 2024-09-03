@@ -169,12 +169,21 @@ exports.deleteTender = catchAsync(async (req, res, next) => {
 
 exports.awardTender = catchAsync(async (req, res, next) => {
 	const tenderId = req.params.id;
+	const { awardedTo: userId, company } = req.body;
 
-	const userId = req.body.awardedTo;
-	const company = req.body.company;
+	const user = await User.findByPk(userId, {
+		attributes: ['userId', 'email', 'name']
+	});
 
-	const user = await User.findByPk(userId);
+	if (!user) {
+		return next(new AppError('user not found.'));
+	}
+
 	const tender = await Tender.update({ awardedTo: userId, status: `${constants.tenderStatuses.AWARDED} to ${company}`}, { where: { tenderId }});
+
+	if (!tender) {
+		return next(new AppError('tender not found.'));
+	}
 
 	const emailContent = `Congratulations, we are pleased to let you know that your company "${company}" has been selected for project`;
 	const emailOptions = {
