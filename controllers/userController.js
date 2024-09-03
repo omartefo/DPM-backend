@@ -320,18 +320,11 @@ validateAdmin = (user) => {
 }
 
 sendVerifyAccountEmail = async (token, user) => {
-	console.log('Sending email ....');
-	console.log('Token =', token);
-	console.log('User =', user);
-	console.log('env =', process.env.NODE_ENV);
-
 	let redirectUrl = `http://localhost:4200/confirm/${token}`;
 
 	if (process.env.NODE_ENV === 'production') {
-		redirectUrl = `http://dohapm.com/confirm/${token}`;
+		redirectUrl = `${process.env.BASE_URL}/confirm/${token}`;
 	}
-
-	console.log('Redirect URL =', redirectUrl);
 	
 	const emailOptions = {
 		email: user.email,

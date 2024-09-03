@@ -82,7 +82,7 @@ exports.forgotPassword = async(req, res, next) => {
 	let resetURL = `http://localhost:4200/resetPassword/${resetToken}`;
 
 	if (process.env.NODE_ENV === 'production') {
-		resetURL = `https://dpm.herokuapp.com/resetPassword/${resetToken}`;
+		resetURL = `${process.env.BASE_URL}/resetPassword/${resetToken}`;
 	}
 
 	const emailContent = `Forgot Your password? Submit your new password on following url <br> ${resetURL}<br> If you did'nt forgot password, please ignore this email.`;
