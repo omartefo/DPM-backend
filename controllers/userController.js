@@ -289,7 +289,7 @@ validateNonClientUser = (user) => {
 	const schema = Joi.object({
 		name: Joi.string().required().min(3),
 		email: Joi.string().required().email(),
-		mobileNumber: Joi.string().required().min(10).max(10),
+		mobileNumber: Joi.string().required().min(constants.userConfig.MOBILE_NUMBER_LENGTH).max(constants.userConfig.MOBILE_NUMBER_LENGTH),
 		password: Joi.string().required().min(8),
 		type: Joi.string().required().valid(constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR),
 
@@ -310,7 +310,7 @@ validateAdmin = (user) => {
 	const schema = Joi.object({
 		name: Joi.string().required().min(3),
 		email: Joi.string().required().email(),
-		mobileNumber: Joi.string().required().min(10).max(10),
+		mobileNumber: Joi.string().required().min(constants.userConfig.MOBILE_NUMBER_LENGTH).max(constants.userConfig.MOBILE_NUMBER_LENGTH),
 		type: Joi.string().required().valid(constants.userTypes.SUPER_ADMIN, constants.userTypes.ADMIN, constants.userTypes.EMPLOYEE),
 		password: Joi.string().required().min(8),
 		fromAdmin: Joi.boolean().default(false),

@@ -6,6 +6,7 @@ const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const { generateRandomFourDigits, sendSMS } = require("../utils/helpers");
 const { Op } = require("sequelize");
+const constants = require("../utils/constants");
 
 exports.getOTPCode = catchAsync(async(req, res, next) => {
 	const countryCode = '+92';
@@ -60,7 +61,7 @@ exports.verifyOTPCode = catchAsync(async(req, res, next) => {
 
 validateMobileNumber = (mobNumber) => {
 	const schema = Joi.object({
-		mobileNumber: Joi.string().required().min(10).max(10)
+		mobileNumber: Joi.string().required().min(constants.userConfig.MOBILE_NUMBER_LENGTH).max(constants.userConfig.MOBILE_NUMBER_LENGTH)
 	});
 
 	return schema.validate(mobNumber);

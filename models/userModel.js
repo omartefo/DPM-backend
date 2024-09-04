@@ -24,7 +24,7 @@ const User = db.define('user',
 		unique: true
 	},
 	mobileNumber: {
-		type: Sequelize.STRING(10),
+		type: Sequelize.STRING(constants.userConfig.MOBILE_NUMBER_LENGTH),
 		allowNull: false,
 		unique: true
 	},
@@ -62,7 +62,7 @@ function validateUser(user) {
 	const schema = Joi.object({
 		name: Joi.string().required().min(3),
 		email: Joi.string().required().email(),
-		mobileNumber: Joi.string().required().min(10).max(10),
+		mobileNumber: Joi.string().required().min(constants.userConfig.MOBILE_NUMBER_LENGTH).max(constants.userConfig.MOBILE_NUMBER_LENGTH),
 		password: Joi.string().required().min(8),
 		type: Joi.string().required().valid(constants.userTypes.CLIENT),
 		fromAdmin: Joi.boolean().default(false),

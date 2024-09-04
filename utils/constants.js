@@ -12,6 +12,9 @@ const constants = {
         OPEN: 'Open',
         UNDER_EVALUATION: 'Under Evaluation',
         AWARDED: 'Awarded'
+    },
+    userConfig: {
+        MOBILE_NUMBER_LENGTH: 10
     }
 };
 
