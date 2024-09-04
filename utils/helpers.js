@@ -1,5 +1,5 @@
 const superAgent = require('superagent');
-const nodeMailer = require('nodemailer');
+const { SendMailClient }  = require('zeptomail');
 
 exports.generateRandomFourDigits = () => {
 	return Math.floor(1000 + Math.random() * 9000);
@@ -18,25 +18,31 @@ exports.sendSMS = async (number, text) => {
 }
 
 exports.sendEmail = async (options) => {
-	// Create a transporter. It is a service that will actually send email.
-	const transporter = nodeMailer.createTransport({
-		host: process.env.EMAIL_HOST,
-		secure: true,
-		port: 465,
-		auth: {
-			user: process.env.EMAIL_USER,
-			pass: process.env.EMAIL_PASSWORD
-		}
+	const url = process.env.ZOHO_API_URL;
+	const token = process.env.ZOHO_API_TOKEN;
+	const mailFrom = process.env.EMAIL_USER;
+
+    const { email: emailTo, subject, html } = options;
+
+	let client = new SendMailClient({url, token});
+
+	await client.sendMail({
+		"from": 
+		{
+			"address": mailFrom,
+			"name": "noreply"
+		},
+		"to": 
+		[
+			{
+			"email_address": 
+				{
+					"address": emailTo,
+					"name": "Doha Project Management"
+				}
+			}
+		],
+		"subject": subject,
+		"htmlbody": html,
 	});
-
-	// Define the email options
-	const mailOptions = {
-		from: process.env.EMAIL_USER,
-		to: options.email,
-		subject: options.subject,
-		html: options.html
-	};
-
-	// Send the email
-	await transporter.sendMail(mailOptions);
 };
