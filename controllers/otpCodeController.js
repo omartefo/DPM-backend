@@ -9,7 +9,7 @@ const { Op } = require("sequelize");
 const constants = require("../utils/constants");
 
 exports.getOTPCode = catchAsync(async(req, res, next) => {
-	const countryCode = '+92';
+	const countryCode = '+974';
 	const { error } = validateMobileNumber(req.body);
 	if (error) return next(new AppError(error.message, 400));
 
