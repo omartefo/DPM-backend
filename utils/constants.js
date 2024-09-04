@@ -14,7 +14,7 @@ const constants = {
         AWARDED: 'Awarded'
     },
     userConfig: {
-        MOBILE_NUMBER_LENGTH: 10
+        MOBILE_NUMBER_LENGTH: 8
     }
 };
 
