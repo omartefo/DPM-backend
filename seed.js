@@ -40,7 +40,7 @@ createClient = async () => {
         name: 'Farid Client', 
         email: 'faridclient@gmail.com',
         password: encryptedPassword,
-        mobileNumber: '3331234567',
+        mobileNumber: '12345676',
         isAccountActive: true,
         isEmailVerified: true,
         type: constants.userTypes.CLIENT
