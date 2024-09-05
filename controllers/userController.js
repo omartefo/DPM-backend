@@ -287,6 +287,9 @@ exports.verifyUser = catchAsync(async(req, res, next) => {
 });
 
 exports.sendEmailToUser = catchAsync( async(req, res, next) => {
+	const { error } = validateEmailRequest(req.body);
+	if (error) return next(new AppError(error.message, 400));
+
 	const { subject, message, name, email } = req.body;
 
 	const messageWithUserInfo = `
@@ -297,7 +300,7 @@ exports.sendEmailToUser = catchAsync( async(req, res, next) => {
 		`;
 
 	const options = {
-		email: email,
+		email: process.env.DOHA_HELP_DESK_EMAIL,
 		subject,
 		html: messageWithUserInfo
 	};
@@ -342,6 +345,18 @@ validateAdmin = (user) => {
 	});
 
 	return schema.validate(user);
+}
+
+validateEmailRequest = (emailOptions) => {
+	const schema = Joi.object({
+		name: Joi.string().required(),
+		email: Joi.string().required().email(),
+		phoneNumber: Joi.string().required(),
+		message: Joi.string().required(),
+		subject: Joi.string().required()
+	});
+
+	return schema.validate(emailOptions);
 }
 
 sendVerifyAccountEmail = async (token, user) => {
