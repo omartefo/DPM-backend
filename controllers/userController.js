@@ -206,6 +206,31 @@ exports.createUser = catchAsync(async (req, res, next) => {
 	});
 });
 
+exports.resetPassword = catchAsync(async (req, res, next) => {
+    const { newPassword } = req.body;
+    if (!newPassword) {
+        return next(new AppError('New password is required.', 404));
+    }
+
+    const userId = req.params.id;
+	const user = await User.findByPk(userId, { attributes: ['userId', 'password'] });
+
+	if (!user) return next(new AppError('No record found with given Id', 404));
+
+    const salt = await bcrypt.genSalt(10);
+	const encryptedNewPassword = await bcrypt.hash(newPassword, salt);
+
+    user.password = encryptedNewPassword;
+    await user.save();
+
+	res.status(200).json({
+		status: 'success',
+		data: {
+			user
+		}
+	});
+});
+
 exports.updateUser = catchAsync(async (req, res, next) => {
 	const userId = req.params.id;
 	const user = await User.update(req.body, { where: { userId }});

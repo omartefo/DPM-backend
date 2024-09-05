@@ -11,6 +11,9 @@ router.route('/').post(userController.createUser);
 
 router.use(auth);
 
+router.route('/:id/resetPassword')
+	.patch(restrictTo(constants.userTypes.SUPER_ADMIN), userController.resetPassword);
+
 router.route('/me').get(userController.me);
 router.route('/')
 	.get(
