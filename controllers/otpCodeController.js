@@ -7,11 +7,21 @@ const catchAsync = require("../utils/catchAsync");
 const { generateRandomFourDigits, sendSMS } = require("../utils/helpers");
 const { Op } = require("sequelize");
 const constants = require("../utils/constants");
+const { User } = require("../models/userModel");
 
 exports.getOTPCode = catchAsync(async(req, res, next) => {
-	const countryCode = '+974';
 	const { error } = validateMobileNumber(req.body);
 	if (error) return next(new AppError(error.message, 400));
+
+	const user = await User.findOne({ 
+		where: { mobileNumber: { [Op.eq]: req.body.mobileNumber }
+	}});
+
+	if (user) {
+		return next(new AppError('Mobile number already exists', 400));
+	}
+
+	const countryCode = '+974';
 
 	const code = generateRandomFourDigits();
 	const text = `${code} is your DPM verification code.`;
