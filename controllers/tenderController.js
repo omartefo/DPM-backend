@@ -181,7 +181,7 @@ exports.awardTender = catchAsync(async (req, res, next) => {
 		return next(new AppError('user not found.'));
 	}
 
-	const tender = await Tender.update({ awardedTo: userId, status: `${constants.tenderStatuses.AWARDED} to ${company}`}, { where: { tenderId }});
+	const tender = await Tender.update({ awardedTo: userId, status: `${constants.tenderStatuses.AWARDED}`}, { where: { tenderId }});
 
 	if (!tender) {
 		return next(new AppError('tender not found.'));
