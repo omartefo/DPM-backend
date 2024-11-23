@@ -154,16 +154,18 @@ exports.updateTender = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteTender = catchAsync(async (req, res, next) => {
-	const tenderId = req.params.id;
-	const tender = await Tender.destroy({ where: { tenderId }});
+	const tenderId = +req.params.id;
+
+	const tender = await Tender.findByPk(tenderId);
 
 	if (!tender) return next(new AppError('No record found with given Id', 404));
 
+	await Bidding.destroy({ where: { tenderId } });
+	await Tender.destroy({ where: { tenderId }});
+
 	res.status(204).json({
 		status: 'success',
-		data: {
-			tender
-		}
+		data: {}
 	});
 });
 
