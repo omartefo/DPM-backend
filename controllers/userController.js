@@ -50,7 +50,7 @@ prepareWhere = (userType) => {
 
 exports.getAllUsers = async (req, res, next) => {
 	const page = +req.query.page || 1;
-	const limit = +req.query.limit || 10;
+	const limit = req.query.limit === 'all' ? null : +req.query.limit || 10;
 	const userType = req.query.type;
 	const mobileNumber = req.query.mobileNumber;
 
@@ -65,7 +65,10 @@ exports.getAllUsers = async (req, res, next) => {
 		}
 	}
 
-	const offset = (page - 1) * limit;
+	let offset = null;
+	if (limit) {
+		offset = (page - 1) * limit;
+	}
 	
 	const users = await User.findAndCountAll({
 		attributes: {
