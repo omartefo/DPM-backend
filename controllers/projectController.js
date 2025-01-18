@@ -17,7 +17,7 @@ exports.getAllProjects = catchAsync(async (req, res, next) => {
 	const where = {};
 
 	const page = +req.query.page || 1;
-	const limit = +req.query.limit || 10;
+	const limit = req.query.limit === 'all' ? null : +req.query.limit || 10;
 
 	for (let key in search) {
 		if (key === 'page' || key === 'limit') continue;
@@ -38,7 +38,10 @@ exports.getAllProjects = catchAsync(async (req, res, next) => {
 		where.clientId = userId;
 	}
 
-	const offset = (page - 1) * limit;
+	let offset = null;
+	if (limit) {
+		offset = (page - 1) * limit;
+	}
 
 	const projects = await Project.findAndCountAll( {
 		where,
