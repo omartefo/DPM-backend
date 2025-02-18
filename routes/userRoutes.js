@@ -14,6 +14,9 @@ router.use(auth);
 router.route('/:id/resetPassword')
 	.patch(restrictTo(constants.userTypes.SUPER_ADMIN), userController.resetPassword);
 
+router.route('/:id/toggleTenderParticipation')
+	.patch(restrictTo(constants.userTypes.SUPER_ADMIN), userController.toggleTenderParticipation);
+
 router.route('/me').get(userController.me);
 router.route('/')
 	.get(

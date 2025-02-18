@@ -47,6 +47,10 @@ const User = db.define('user',
 		type: Sequelize.STRING,			// Possible Types are Client, Supplier, Contractor, Consultant, Super_Admin, Admin, Employee
 		allowNull: false
 	},
+	canParticipateInTenders: {
+		type: Sequelize.BOOLEAN,
+		defaultValue: true
+	},
 	companyId: {
 		type: Sequelize.INTEGER,
 		allowNull: true,

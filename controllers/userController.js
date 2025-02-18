@@ -96,7 +96,7 @@ exports.getAllUsers = async (req, res, next) => {
 
 exports.me = catchAsync(async (req, res, next) => {
 	const userId = req.user.userId;
-	const user = await User.findByPk(userId, { attributes: ['userId', 'name', 'email', 'mobileNumber', 'type' ] });
+	const user = await User.findByPk(userId, { attributes: ['userId', 'name', 'email', 'mobileNumber', 'type', 'canParticipateInTenders' ] });
 
 	if (!user) return next(new AppError('No record found with given Id', 404));
 
@@ -230,6 +230,25 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 		status: 'success',
 		data: {
 			user
+		}
+	});
+});
+
+exports.toggleTenderParticipation = catchAsync(async (req, res, next) => {
+	const canParticipateInTenders = req.body.canParticipateInTenders;
+    const userId = +req.params.id;
+
+	const user = await User.findByPk(userId, {
+		attributes: ['userId', 'companyId']
+	});
+	if (!user) return next(new AppError('No record found with given Id', 404));
+
+	await User.update({ canParticipateInTenders }, { where: { userId }});
+
+	res.status(200).json({
+		status: 'success',
+		data: {
+			canParticipateInTenders
 		}
 	});
 });
