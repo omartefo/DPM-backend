@@ -95,7 +95,17 @@ exports.participateInBidding = catchAsync(async (req, res, next) => {
 	const { error } = validate(req.body);
 	if (error) return next(new AppError(error.message, 400));
 
-	const tender = await Tender.findByPk(req.body.tenderId);
+	const loggedInUserId = req.user.userId;
+	const user = await User.findByPk(loggedInUserId, { attributes: ['userId', 'name', 'email', 'type', 'canParticipateInTenders'] });
+
+	const userTypes = [constants.userTypes.CONSULTANT, constants.userTypes.CONTRACTOR, constants.userTypes.SUPPLIER];
+	if (!userTypes.includes(user.type) || !user.canParticipateInTenders) {
+		return next(new AppError("You don't have permission to perform this actions", 403));
+	}
+
+	const tender = await Tender.findByPk(req.body.tenderId, { 
+		attributes: ['tenderId', 'openingDate', 'closingDate', 'minimumPrice', 'maximumPrice'] 
+	});
 	if (!tender) return next(new AppError('Could not found tender with the given Id', 404));
 
 	// Check tender's opening and closing dates
@@ -106,13 +116,9 @@ exports.participateInBidding = catchAsync(async (req, res, next) => {
 	if (!(currentTime > tenderOpeningTime && currentTime < tenderClosingTime)) {
 		return next(new AppError('Can not participate in tender bidding.', 400));
 	}
-	
-	const user = await User.findByPk(req.body.userId);
-	if (![constants.userTypes.CONSULTANT, constants.userTypes.CONTRACTOR, constants.userTypes.SUPPLIER].includes(user.type)) {
-		return next(new AppError("You don't have permission to perform this actions", 403));
-	}
 
 	const lastTenMinutes = moment(tenderClosingTime).subtract(10, 'minutes');
+	const { tenderId, durationInLetters, durationInNumbers, priceInLetters, priceInNumbers } = req.body;
 
 	if (moment(lastTenMinutes).isSameOrAfter(currentTime)) 
 	{
@@ -143,10 +149,9 @@ exports.participateInBidding = catchAsync(async (req, res, next) => {
 	
 		await sendEmail(emailOptions);
 
-		const { tenderId, userId} = req.body;
-
 		const bid = await Bidding.create({ 
-			tenderId, userId
+			tenderId,
+			userId: loggedInUserId
 		});
 	
 		res.status(201).json({
@@ -157,19 +162,17 @@ exports.participateInBidding = catchAsync(async (req, res, next) => {
 		});
 	}
 	else {
-		const { tenderId, userId, durationInLetters, durationInNumbers, priceInLetters, priceInNumbers } = req.body;
-		
 		let status = 'Not_Qualified';
 		if (priceInNumbers >= tender.minimumPrice && priceInNumbers <= tender.maximumPrice) {
 			status = 'Qualified';
 		}
 
 		const bid = await Bidding.create({ 
-			tenderId, 
-			userId, 
-			durationInLetters, 
-			durationInNumbers, 
-			priceInLetters, 
+			tenderId,
+			userId: loggedInUserId,
+			durationInLetters,
+			durationInNumbers,
+			priceInLetters,
 			priceInNumbers,
 			status
 		});

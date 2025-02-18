@@ -45,7 +45,6 @@ const Bidding = db.define('bidding',
 function validateBid(bid) {
 	const schema = Joi.object({
 		tenderId: Joi.number().required(),
-		userId: Joi.number().required(),
 		durationInLetters: Joi.string().allow(''),
 		durationInNumbers: Joi.number().allow(''),
 		priceInLetters: Joi.string().allow(''),
