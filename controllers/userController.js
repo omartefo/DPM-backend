@@ -235,10 +235,35 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 });
 
 exports.updateUser = catchAsync(async (req, res, next) => {
-	const userId = req.params.id;
-	const user = await User.update(req.body, { where: { userId }});
+	const userId = +req.params.id;
+
+	const user = await User.findByPk(userId, {
+		attributes: ['userId', 'companyId']
+	});
 
 	if (!user) return next(new AppError('No record found with given Id', 404));
+
+	const { name, email, mobileNumber, type, companyId } = req.body;
+	const userInfoToUpdate = {
+		name,
+		email,
+		mobileNumber,
+		type,
+		companyId
+	};
+	await User.update(userInfoToUpdate, { where: { userId }});
+
+	if ([constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR].includes(type)) {
+		const { companyName, commercialRegNumber, address, totalEmployees } = req.body;
+		const companyInfo = {
+			name: companyName,
+			commercialRegNumber, 
+			address,
+			totalEmployees
+		};
+
+		await UserCompany.update(companyInfo, { where: { companyId: user.companyId }});
+	}
 
 	res.status(200).json({
 		status: 'success',
