@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon server.js",
     "seed": "node seed.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "update_bid_status": "node scripts/biddingStatusChange.js"
   },
   "keywords": [],
   "author": "",
