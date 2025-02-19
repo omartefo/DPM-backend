@@ -12,7 +12,7 @@ const { User } = require("../models/userModel");
 // Utils
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
-const { sendEmail } = require("../utils/helpers");
+const { sendEmail, getBiddingStatus } = require("../utils/helpers");
 const constants = require("../utils/constants");
 
 exports.getAllBids = catchAsync(async (req, res, next) => {
@@ -95,124 +95,80 @@ exports.participateInBidding = catchAsync(async (req, res, next) => {
 	const { error } = validate(req.body);
 	if (error) return next(new AppError(error.message, 400));
 
+	const { tenderId, durationInLetters, durationInNumbers, priceInLetters, priceInNumbers } = req.body;
 	const loggedInUserId = req.user.userId;
 	const user = await User.findByPk(loggedInUserId, { attributes: ['userId', 'name', 'email', 'type', 'canParticipateInTenders'] });
 
-	const userTypes = [constants.userTypes.CONSULTANT, constants.userTypes.CONTRACTOR, constants.userTypes.SUPPLIER];
-	if (!userTypes.includes(user.type) || !user.canParticipateInTenders) {
+	if (user.type === constants.userTypes.CONTRACTOR && !user?.canParticipateInTenders) {
 		return next(new AppError("You don't have permission to perform this actions", 403));
 	}
 
-	const tender = await Tender.findByPk(req.body.tenderId, { 
+	const tender = await Tender.findByPk(tenderId, { 
 		attributes: ['tenderId', 'openingDate', 'closingDate', 'minimumPrice', 'maximumPrice'] 
 	});
 	if (!tender) return next(new AppError('Could not found tender with the given Id', 404));
 
+	const { openingDate, closingDate, minimumPrice, maximumPrice } = tender;
+
 	// Check tender's opening and closing dates
 	const currentTime = new Date().getTime();
-	const tenderOpeningTime = new Date(tender.openingDate).getTime();
-	const tenderClosingTime = new Date(tender.closingDate).getTime();
+	const tenderOpeningTime = new Date(openingDate).getTime();
+	const tenderClosingTime = new Date(closingDate).getTime();
 
 	if (!(currentTime > tenderOpeningTime && currentTime < tenderClosingTime)) {
-		return next(new AppError('Can not participate in tender bidding.', 400));
+		return next(new AppError('You can not participate in tender bidding', 400));
 	}
 
 	const lastTenMinutes = moment(tenderClosingTime).subtract(10, 'minutes');
-	const { tenderId, durationInLetters, durationInNumbers, priceInLetters, priceInNumbers } = req.body;
+	let bid;
 
 	if (moment(lastTenMinutes).isSameOrAfter(currentTime)) 
 	{
-		const scheduleEmailDate = new Date(lastTenMinutes);
-		schedule.scheduleJob(scheduleEmailDate, async function() {
-			console.log(`Sending email at ${moment(scheduleEmailDate).format('M/D/YYYY, H:mm:ss')} to user ${user.name.toUpperCase()}`);
-
-			const emailOptions = {
-				email: user.email,
-				subject: 'Bidding Time Arrived',
-				html:  `
-					<h2>Hi, ${user.name}</h2>
-					<p>Please submit your bidding info</p>
-				</div>`
-			};
-		
-			await sendEmail(emailOptions);
-		}.bind(null, user));
-
-		const emailOptions = {
-			email: user.email,
-			subject: 'Bidding Participation',
-			html:  `
-				<h2>Hi, ${user.name}</h2>
-				<p>Thanks for participating in the bidding, you will notified using email and SMS when bidding time arrives</p>
-			</div>`
-		};
-	
-		await sendEmail(emailOptions);
-
-		const bid = await Bidding.create({ 
-			tenderId,
-			userId: loggedInUserId
-		});
-	
-		res.status(201).json({
-			status: 'success',
-			data: {
-				bid
-			}
-		});
+		await scheduleBiddingArrivalEmail(lastTenMinutes, user);
+		await sendBidParticipationEmail(user);
+		bid = await Bidding.create({ tenderId, userId: loggedInUserId });
 	}
 	else {
-		let status = 'Not_Qualified';
-		if (priceInNumbers >= tender.minimumPrice && priceInNumbers <= tender.maximumPrice) {
-			status = 'Qualified';
-		}
-
-		const bid = await Bidding.create({ 
+		bid = await Bidding.create({ 
 			tenderId,
 			userId: loggedInUserId,
 			durationInLetters,
 			durationInNumbers,
 			priceInLetters,
 			priceInNumbers,
-			status
-		});
-	
-		res.status(201).json({
-			status: 'success',
-			data: {
-				bid
-			}
+			status: getBiddingStatus(minimumPrice, maximumPrice, priceInNumbers)
 		});
 	}
+
+	res.status(201).json({
+		status: 'success',
+		data: {
+			bid
+		}
+	});
 });
 
 exports.updateBid = catchAsync(async (req, res, next) => {
 	const biddingId = req.params.id;
-
-	const bidding = await Bidding.findByPk(biddingId);
+	const bidding = await Bidding.findByPk(biddingId, { attributes: ['biddingId', 'tenderId'] });
 	if (!bidding) return next(new AppError('Could not find bid with the given Id', 404));
 
-	const tender = await Tender.findByPk(bidding.dataValues.tenderId);
+	const tender = await Tender.findByPk(bidding.tenderId, { attributes: ['tenderId', 'minimumPrice', 'maximumPrice'] });
 	if (!tender) return next(new AppError('Could not find bid with the given Id', 404));
 
-	let status = 'Not_Qualified';
-	if (req.body.priceInNumbers > tender.minimumPrice && req.body.priceInNumbers < tender.maximumPrice) {
-		status = 'Qualified';
-	}
-	req.body.status = status;
-
-	const bid = await Bidding.update(req.body, { where: { biddingId }});
-
-	const emailOptions = {
-		email: req.user.email,
-		subject: 'Bid Placed',
-		html:  `
-			<h2>Hi, ${req.user.name}</h2>
-			<p>Your bid has been submitted successfully</p>
-		</div>`
+	const { durationInLetters, durationInNumbers, priceInLetters, priceInNumbers } = req.body;
+	const { minimumPrice, maximumPrice } = tender;
+	
+	const biddingInfo = {
+		status: getBiddingStatus(minimumPrice, maximumPrice, priceInNumbers),
+		durationInLetters,
+		durationInNumbers,
+		priceInLetters,
+		priceInNumbers
 	};
 
-	await sendEmail(emailOptions);
+	const bid = await Bidding.update(biddingInfo, { where: { biddingId }});
+	await sendBidPlacedEmail(req.user);
 
 	res.status(200).json({
 		status: 'success',
@@ -235,3 +191,53 @@ exports.deleteBid = catchAsync(async (req, res, next) => {
 		}
 	});
 });
+
+async function scheduleBiddingArrivalEmail(lastTenMinutes, user) {
+	const { name, email } = user;
+	const scheduleEmailDate = new Date(lastTenMinutes);
+
+	schedule.scheduleJob(scheduleEmailDate, async function() {
+		console.log(`Sending email at ${moment(scheduleEmailDate).format('M/D/YYYY, H:mm:ss')} to user ${name.toUpperCase()}`);
+
+		const emailOptions = {
+			email,
+			subject: 'Bidding Time Arrived',
+			html: `<div>
+				<h2>Hi, ${name}</h2>
+				<p>Please submit your bidding info</p>
+			</div>`
+		};
+	
+		await sendEmail(emailOptions);
+	});
+}
+
+async function sendBidParticipationEmail(user) {
+	const { email, name } = user;
+
+	const emailOptions = {
+		email,
+		subject: 'Bidding Participation',
+		html: `<div>
+			<h2>Hi, ${name}</h2>
+			<p>Thanks for participating in the bidding, you will notified using email and SMS when bidding time arrives</p>
+		</div>`
+	};
+
+	await sendEmail(emailOptions);
+}
+
+async function sendBidPlacedEmail(user) {
+	const { name, email } = user;
+
+	const emailOptions = {
+		email,
+		subject: 'Bid Placed',
+		html:  `
+			<h2>Hi, ${name}</h2>
+			<p>Your bid has been submitted successfully</p>
+		</div>`
+	};
+
+	await sendEmail(emailOptions);
+}

@@ -1,5 +1,6 @@
 const superAgent = require('superagent');
 const { SendMailClient }  = require('zeptomail');
+const constants = require('./constants');
 
 exports.generateRandomFourDigits = () => {
 	return Math.floor(1000 + Math.random() * 9000);
@@ -12,9 +13,9 @@ exports.sendSMS = async (number, text) => {
 	});
 
 	return await superAgent.post(process.env.BULK_SMS_API_BASE_URL)
-				.send(payload)
-				.set('Content-Type', 'application/json')
-				.set('Authorization', `Basic ${process.env.BULK_SMS_TOKEN}`);
+		.send(payload)
+		.set('Content-Type', 'application/json')
+		.set('Authorization', `Basic ${process.env.BULK_SMS_TOKEN}`);
 }
 
 exports.sendEmail = async (options) => {
@@ -46,3 +47,13 @@ exports.sendEmail = async (options) => {
 		"htmlbody": html,
 	});
 };
+
+exports.getBiddingStatus = (tenderMinPrice, tenderMaxPrice, userPrice) => {
+	let status = constants.biddingStatuses.OUT_OF_RANGE;
+	
+	if (userPrice >= tenderMinPrice && userPrice <= tenderMaxPrice) {
+		status = constants.biddingStatuses.IN_RANGE;
+	}
+
+	return status;
+}

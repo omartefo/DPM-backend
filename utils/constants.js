@@ -13,6 +13,10 @@ const constants = {
         UNDER_EVALUATION: 'Under Evaluation',
         AWARDED: 'Awarded'
     },
+    biddingStatuses: {
+        IN_RANGE: 'In_Range',
+        OUT_OF_RANGE: 'Out_Of_Range'
+    },
     userConfig: {
         MOBILE_NUMBER_LENGTH: 8
     }
