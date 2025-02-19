@@ -44,7 +44,7 @@ exports.getAllTenders = catchAsync(async (req, res, next) => {
 
 	const offset = (page - 1) * limit;
 
-	const tenders = await Tender.findAll({
+	const tenders = await Tender.findAndCountAll({
 		where,
 		limit,
 		offset,
@@ -62,7 +62,6 @@ exports.getAllTenders = catchAsync(async (req, res, next) => {
 
 	res.status(200).json({
 		status: 'success',
-		totalRecords: await Tender.count(),
 		data: {
 			tenders
 		}

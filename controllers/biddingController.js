@@ -31,7 +31,7 @@ exports.getAllBids = catchAsync(async (req, res, next) => {
 
 	const offset = (page - 1) * limit;
 
-	const bids = await Bidding.findAll({
+	const bids = await Bidding.findAndCountAll({
 		limit,
 		offset,
 		include: [
@@ -46,7 +46,6 @@ exports.getAllBids = catchAsync(async (req, res, next) => {
 
 	res.status(200).json({
 		status: 'success',
-		totalRecords: await Bidding.count(),
 		data: {
 			bids
 		}
