@@ -15,6 +15,8 @@ const catchAsync = require('../utils/catchAsync');
 const { sendEmail } = require('../utils/helpers');
 const constants = require('../utils/constants');
 const { Project } = require('../models/projectsModel');
+const { UserNotification } = require('../models/notificationModel');
+const { Tender } = require('../models/tenderModel');
 
 prepareWhere = (userType) => {
 	let operator = 'eq';
@@ -293,20 +295,41 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteUser = catchAsync(async (req, res, next) => {
-	const userId = req.params.id;
-	
-	await Project.destroy({ where: { clientId: userId }});
-	const user = await User.destroy({ where: { userId }});
+    const userId = +req.params.id;
+    const userToDelete = await User.findByPk(userId, { attributes: ['userId', 'type'] });
 
-	if (!user) return next(new AppError('No record found with given Id', 404));
+    if (!userToDelete) {
+        throw new AppError('No record found with given Id', 404);
+    }
 
-	res.status(204).json({
-		status: 'success',
-		data: {
-			user
-		}
-	});
+    // If user is a Client, delete all projects
+    if (userToDelete.type === constants.userTypes.CLIENT) {
+        await Project.destroy({ where: { clientId: userId } });
+    }
+
+	// Check if user to delete is awarded with a tender;
+	const isUserAwarded = await Tender.findOne({ where: { awardedTo: userId } });
+    if (isUserAwarded) {
+        throw new AppError('Cannot delete user: User is awarded in tenders.', 400);
+    }
+
+    // If user is Consultant, Contractor, or Supplier, delete biddings & notifications
+    const usersWhoCanBid = [constants.userTypes.CONSULTANT, constants.userTypes.CONTRACTOR, constants.userTypes.SUPPLIER];
+    if (usersWhoCanBid.includes(userToDelete.type)) {
+        await Bidding.destroy({ where: { userId } });
+        await UserNotification.destroy({ where: { userId } });
+    }
+
+    await User.destroy({ where: { userId } });
+
+    res.status(204).json({
+        status: 'success',
+        data: {
+            userToDelete
+        }
+    });
 });
+
 
 exports.verifyUser = catchAsync(async(req, res, next) => {
 	const confirmationCode = req.params.confirmationCode;
