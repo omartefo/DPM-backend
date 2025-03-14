@@ -264,12 +264,13 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 
 	if (!user) return next(new AppError('No record found with given Id', 404));
 
-	const { name, email, mobileNumber, type, companyId } = req.body;
+	const { name, email, mobileNumber, type, companyId, isAccountActive } = req.body;
 	const userInfoToUpdate = {
 		name,
 		email,
 		mobileNumber,
 		type,
+		isAccountActive,
 		companyId
 	};
 	await User.update(userInfoToUpdate, { where: { userId }});
