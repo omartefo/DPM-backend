@@ -284,7 +284,15 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 			totalEmployees
 		};
 
-		await UserCompany.update(companyInfo, { where: { companyId: user.companyId }});
+		if (user.companyId) {
+			await UserCompany.update(companyInfo, { where: { companyId: user.companyId }});
+		}
+		else {
+			const company = await UserCompany.create(companyInfo);
+			
+			user.companyId = company.companyId;
+			await user.save();
+		}
 	}
 
 	res.status(200).json({
