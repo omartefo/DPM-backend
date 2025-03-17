@@ -8,10 +8,11 @@ const sendErrorDev = (err, res) => {
 }
 
 const sendErrorProd = (err, res) => {
-	let errorMessage = err.message;
+	let errorMessage = err.message || err.error.message || 'Something went wrong, please contact support';
+	const errorCode = err.name || err.error.code;
 
-	if (err.name) {
-		switch(err.name) {
+	if (errorCode) {
+		switch(errorCode) {
 			case 'SequelizeUniqueConstraintError':
 				const field = Object.entries(err.fields);
 				errorMessage = `${field[0][0]} already exists`;
@@ -25,6 +26,11 @@ const sendErrorProd = (err, res) => {
 			case 'TokenExpiredError':
 				err.statusCode = 401;
 				errorMessage = 'Your token is expired. Please log in again';
+				break;
+
+			case 'TM_5001':
+				err.statusCode = 500;
+				errorMessage = `Zoho, ${errorMessage}`;
 				break;
 		}
 	}

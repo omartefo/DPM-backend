@@ -192,51 +192,66 @@ exports.deleteBid = catchAsync(async (req, res, next) => {
 });
 
 async function scheduleBiddingArrivalEmail(lastTenMinutes, user) {
-	const { name, email } = user;
-	const scheduleEmailDate = new Date(lastTenMinutes);
+	try {
+		const { name, email } = user;
+		const scheduleEmailDate = new Date(lastTenMinutes);
 
-	schedule.scheduleJob(scheduleEmailDate, async function() {
-		console.log(`Sending email at ${moment(scheduleEmailDate).format('M/D/YYYY, H:mm:ss')} to user ${name.toUpperCase()}`);
+		schedule.scheduleJob(scheduleEmailDate, async function() {
+			console.log(`Sending email at ${moment(scheduleEmailDate).format('M/D/YYYY, H:mm:ss')} to user ${name.toUpperCase()}`);
 
-		const emailOptions = {
-			email,
-			subject: 'Bidding Time Arrived',
-			html: `<div>
-				<h2>Hi, ${name}</h2>
-				<p>Please submit your bidding info</p>
-			</div>`
-		};
-	
-		await sendEmail(emailOptions);
-	});
+			const emailOptions = {
+				email,
+				subject: 'Bidding Time Arrived',
+				html: `<div>
+					<h2>Hi, ${name}</h2>
+					<p>Please submit your bidding info</p>
+				</div>`
+			};
+		
+			await sendEmail(emailOptions);
+		});
+	}
+	catch(error) {
+		throw error;
+	}
 }
 
 async function sendBidParticipationEmail(user) {
-	const { email, name } = user;
+	try {
+		const { email, name } = user;
 
-	const emailOptions = {
-		email,
-		subject: 'Bidding Participation',
-		html: `<div>
-			<h2>Hi, ${name}</h2>
-			<p>Thanks for participating in the bidding, you will notified using email and SMS when bidding time arrives</p>
-		</div>`
-	};
+		const emailOptions = {
+			email,
+			subject: 'Bidding Participation',
+			html: `<div>
+				<h2>Hi, ${name}</h2>
+				<p>Thanks for participating in the bidding, you will notified using email and SMS when bidding time arrives</p>
+			</div>`
+		};
 
-	await sendEmail(emailOptions);
+		await sendEmail(emailOptions);
+	}
+	catch(error) {
+		throw error;
+	}
 }
 
 async function sendBidPlacedEmail(user) {
-	const { name, email } = user;
+	try {
+		const { name, email } = user;
 
-	const emailOptions = {
-		email,
-		subject: 'Bid Placed',
-		html:  `
-			<h2>Hi, ${name}</h2>
-			<p>Your bid has been submitted successfully</p>
-		</div>`
-	};
+		const emailOptions = {
+			email,
+			subject: 'Bid Placed',
+			html:  `
+				<h2>Hi, ${name}</h2>
+				<p>Your bid has been submitted successfully</p>
+			</div>`
+		};
 
-	await sendEmail(emailOptions);
+		await sendEmail(emailOptions);
+	}
+	catch(error) {
+		throw error;
+	}
 }
