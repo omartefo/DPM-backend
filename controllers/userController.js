@@ -173,18 +173,21 @@ exports.createUser = catchAsync(async (req, res, next) => {
 		const encryptedPassword = await bcrypt.hash(password, salt);
 		let company;
 
-		if ([constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR].includes(type)) {
-			const { companyName, commercialRegNumber, address, totalEmployees } = req.body;
-
-			company = await UserCompany.create({
-				name: companyName, 
-				commercialRegNumber, 
+		if ([constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR].includes(type))
+		{
+			const { companyName, commercialRegNumber, address, totalEmployees, isVerifiedOnBinaa } = req.body;
+			const company = {
+				name: companyName,
+				commercialRegNumber,
 				address,
-				totalEmployees
-			}, { transaction });
+				totalEmployees,
+				isVerifiedOnBinaa
+			};
+
+			company = await UserCompany.create(company, { transaction });
 		}
 
-		const user = await User.create({ 
+		const userData = { 
 			name,
 			email,
 			mobileNumber,
@@ -193,7 +196,9 @@ exports.createUser = catchAsync(async (req, res, next) => {
 			type,
 			confirmationCode: token,
 			companyId: company?.companyId || null
-		}, { transaction });
+		};
+
+		const user = await User.create(userData, { transaction });
 
 		// Don't need email verification incase admin add user;
 		if (req.body.fromAdmin) {
@@ -213,6 +218,131 @@ exports.createUser = catchAsync(async (req, res, next) => {
 			message: 'User was registered successfully! Please check your email'
 		});
 	} catch (err) {
+		await transaction.rollback();
+		throw err; // Let catchAsync handle it
+	}
+});
+
+exports.updateUser = catchAsync(async (req, res, next) => {
+	const userId = +req.params.id;
+
+	const user = await User.findByPk(userId, {
+		attributes: ['userId', 'companyId']
+	});
+
+	if (!user) return next(new AppError('No record found with given Id', 404));
+
+	const transaction = await db.transaction();
+
+	try {
+		const { name, email, mobileNumber, type, companyId, isAccountActive } = req.body;
+		const userInfoToUpdate = {
+			name,
+			email,
+			mobileNumber,
+			type,
+			isAccountActive,
+			companyId
+		};
+		await User.update(userInfoToUpdate, { 
+			where: { userId },
+			transaction
+		});
+
+		const userWhoCanHaveCompany = [
+			constants.userTypes.CONSULTANT,
+			constants.userTypes.SUPPLIER,
+			constants.userTypes.CONTRACTOR
+		];
+	
+		if (userWhoCanHaveCompany.includes(type)) {
+			const { companyName, commercialRegNumber, address, totalEmployees, isVerifiedOnBinaa } = req.body;
+			const companyInfo = {
+				name: companyName,
+				commercialRegNumber, 
+				address,
+				totalEmployees,
+				isVerifiedOnBinaa
+			};
+	
+			if (user.companyId) {
+				await UserCompany.update(companyInfo, 
+					{ where: { companyId: user.companyId },
+					transaction
+				});
+			}
+			else {
+				const company = await UserCompany.create(companyInfo, { transaction });
+				user.companyId = company.companyId;
+				await user.save({ transaction });
+			}
+		}
+	
+		await transaction.commit();
+
+		res.status(200).json({
+			status: 'success',
+			data: {
+				user
+			}
+		});
+	} catch(error) {
+		await transaction.rollback();
+		throw err; // Let catchAsync handle it
+	}
+});
+
+exports.deleteUser = catchAsync(async (req, res, next) => {
+	const userId = +req.params.id;
+	const userToDelete = await User.findByPk(userId, { attributes: ['userId', 'type'] });
+
+	if (!userToDelete) {
+		throw new AppError('No record found with given Id', 404);
+	}
+
+	const transaction = await db.transaction();
+
+	try {
+		// If user is a Client, delete all projects
+		if (userToDelete.type === constants.userTypes.CLIENT) {
+			await Project.destroy({ where: { clientId: userId }, transaction });
+		}
+
+		// Check if user to delete is awarded with a tender;
+		const isUserAwarded = await Tender.findOne({ 
+			where: { awardedTo: userId },
+			transaction
+		});
+
+		if (isUserAwarded) {
+			await transaction.rollback();
+			throw new AppError('Cannot delete user: User is awarded in tenders.', 400);
+		}
+
+		// If user is Consultant, Contractor, or Supplier, delete biddings & notifications
+		const usersWhoCanBid = [
+			constants.userTypes.CONSULTANT,
+			constants.userTypes.CONTRACTOR,
+			constants.userTypes.SUPPLIER
+		];
+
+		if (usersWhoCanBid.includes(userToDelete.type)) {
+			await Bidding.destroy({ where: { userId }, transaction });
+			await UserNotification.destroy({ where: { userId }, transaction });
+		}
+
+		await User.destroy({ where: { userId }, transaction });
+
+		await transaction.commit();
+
+		res.status(204).json({
+			status: 'success',
+			data: {
+					userToDelete
+			}
+		});
+	}
+	catch(error) {
 		await transaction.rollback();
 		throw err; // Let catchAsync handle it
 	}
@@ -261,91 +391,6 @@ exports.toggleTenderParticipation = catchAsync(async (req, res, next) => {
 		}
 	});
 });
-
-exports.updateUser = catchAsync(async (req, res, next) => {
-	const userId = +req.params.id;
-
-	const user = await User.findByPk(userId, {
-		attributes: ['userId', 'companyId']
-	});
-
-	if (!user) return next(new AppError('No record found with given Id', 404));
-
-	const { name, email, mobileNumber, type, companyId, isAccountActive } = req.body;
-	const userInfoToUpdate = {
-		name,
-		email,
-		mobileNumber,
-		type,
-		isAccountActive,
-		companyId
-	};
-	await User.update(userInfoToUpdate, { where: { userId }});
-
-	if ([constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR].includes(type)) {
-		const { companyName, commercialRegNumber, address, totalEmployees } = req.body;
-		const companyInfo = {
-			name: companyName,
-			commercialRegNumber, 
-			address,
-			totalEmployees
-		};
-
-		if (user.companyId) {
-			await UserCompany.update(companyInfo, { where: { companyId: user.companyId }});
-		}
-		else {
-			const company = await UserCompany.create(companyInfo);
-			
-			user.companyId = company.companyId;
-			await user.save();
-		}
-	}
-
-	res.status(200).json({
-		status: 'success',
-		data: {
-			user
-		}
-	});
-});
-
-exports.deleteUser = catchAsync(async (req, res, next) => {
-    const userId = +req.params.id;
-    const userToDelete = await User.findByPk(userId, { attributes: ['userId', 'type'] });
-
-    if (!userToDelete) {
-        throw new AppError('No record found with given Id', 404);
-    }
-
-    // If user is a Client, delete all projects
-    if (userToDelete.type === constants.userTypes.CLIENT) {
-        await Project.destroy({ where: { clientId: userId } });
-    }
-
-	// Check if user to delete is awarded with a tender;
-	const isUserAwarded = await Tender.findOne({ where: { awardedTo: userId } });
-    if (isUserAwarded) {
-        throw new AppError('Cannot delete user: User is awarded in tenders.', 400);
-    }
-
-    // If user is Consultant, Contractor, or Supplier, delete biddings & notifications
-    const usersWhoCanBid = [constants.userTypes.CONSULTANT, constants.userTypes.CONTRACTOR, constants.userTypes.SUPPLIER];
-    if (usersWhoCanBid.includes(userToDelete.type)) {
-        await Bidding.destroy({ where: { userId } });
-        await UserNotification.destroy({ where: { userId } });
-    }
-
-    await User.destroy({ where: { userId } });
-
-    res.status(204).json({
-        status: 'success',
-        data: {
-            userToDelete
-        }
-    });
-});
-
 
 exports.verifyUser = catchAsync(async(req, res, next) => {
 	const confirmationCode = req.params.confirmationCode;
@@ -446,12 +491,9 @@ validateEmailRequest = (emailOptions) => {
 }
 
 sendVerifyAccountEmail = async (token, user) => {
-	let redirectUrl = `http://localhost:4200/confirm/${token}`;
+	const baseUrl = process.env.BASE_URL || 'http://localhost:4200';
+	const redirectUrl = `${baseUrl}/confirm/${token}`;
 
-	if (process.env.NODE_ENV === 'production') {
-		redirectUrl = `${process.env.BASE_URL}/confirm/${token}`;
-	}
-	
 	const emailOptions = {
 		email: user.email,
 		subject: 'Please confirm your account',
