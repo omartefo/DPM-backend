@@ -17,6 +17,7 @@ const constants = require('../utils/constants');
 const { Project } = require('../models/projectsModel');
 const { UserNotification } = require('../models/notificationModel');
 const { Tender } = require('../models/tenderModel');
+const db = require('../db');
 
 prepareWhere = (userType) => {
 	let operator = 'eq';
@@ -160,55 +161,61 @@ exports.createUser = catchAsync(async (req, res, next) => {
 		if (error) return next(new AppError(error.message, 400));
 	}
 
-	const token = jwt.sign({ email: req.body.email }, process.env.JWT_PRIVATE_KEY);
+	// Start transaction
+	const transaction = await db.transaction();
 
-	const { name, email, mobileNumber, password, type, isAdmin } = req.body;
+	try {
+		const token = jwt.sign({ email: req.body.email }, process.env.JWT_PRIVATE_KEY);
 
-	const salt = await bcrypt.genSalt(10);
-	const encryptedPassword = await bcrypt.hash(password, salt);
-	let company;
+		const { name, email, mobileNumber, password, type, isAdmin } = req.body;
 
-	if ([constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR].includes(type)) {
-		const { companyName, commercialRegNumber, address, totalEmployees } = req.body;
+		const salt = await bcrypt.genSalt(10);
+		const encryptedPassword = await bcrypt.hash(password, salt);
+		let company;
 
-		company = await UserCompany.create({
-			name: companyName, 
-			commercialRegNumber, 
-			address,
-			totalEmployees
+		if ([constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR].includes(type)) {
+			const { companyName, commercialRegNumber, address, totalEmployees } = req.body;
+
+			company = await UserCompany.create({
+				name: companyName, 
+				commercialRegNumber, 
+				address,
+				totalEmployees
+			}, { transaction });
+		}
+
+		const user = await User.create({ 
+			name,
+			email,
+			mobileNumber,
+			isAdmin: isAdmin || false,
+			password: encryptedPassword, 
+			type,
+			confirmationCode: token,
+			companyId: company?.companyId || null
+		}, { transaction });
+
+		// Don't need email verification incase admin add user;
+		if (req.body.fromAdmin) {
+			user.isAccountActive = true;
+			user.isEmailVerified = true;
+			await user.save({ transaction });
+		}
+		else {
+			await sendVerifyAccountEmail(token, user);
+		}
+
+		await transaction.commit();
+		
+		res.status(201).json({
+			status: 'success',
+			data: user.userId,
+			message: 'User was registered successfully! Please check your email'
 		});
+	} catch (err) {
+		await transaction.rollback();
+		throw err; // Let catchAsync handle it
 	}
-
-	const user = await User.create({ 
-		name,
-		email,
-		mobileNumber,
-		isAdmin: isAdmin || false,
-		password: encryptedPassword, 
-		type,
-		confirmationCode: token
-	});
-
-	if (company) {
-		user.companyId = company.companyId;
-		await user.save();
-	}
-
-	// Don't need email verification incase admin add user;
-	if (req.body.fromAdmin) {
-		user.isAccountActive = true;
-		user.isEmailVerified = true;
-		await user.save();
-	}
-	else {
-		await sendVerifyAccountEmail(token, user);
-	}
-	
-	res.status(201).json({
-		status: 'success',
-		data: user.userId,
-		message: 'User was registered successfully! Please check your email'
-	});
 });
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
