@@ -25,6 +25,10 @@ const UserCompany = db.define('company',
 	totalEmployees: {
 		type: Sequelize.INTEGER,
 		allowNull: false
+	},
+	isVerifiedOnBinaa: {
+		type: Sequelize.BOOLEAN,
+		defaultValue: false
 	}
 });
 
