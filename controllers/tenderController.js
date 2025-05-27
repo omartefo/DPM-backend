@@ -254,7 +254,7 @@ exports.tenderBids = catchAsync(async (req, res, next) => {
 				model: User,
 				attributes: ['userId'],
 				include: {
-					attributes: ['name'],
+					attributes: ['name', 'isVerifiedOnBinaa'],
 					model: UserCompany,
 					required: false 
 				}
