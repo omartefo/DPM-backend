@@ -286,7 +286,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 				user
 			}
 		});
-	} catch(error) {
+	} catch(err) {
 		await transaction.rollback();
 		throw err; // Let catchAsync handle it
 	}
@@ -342,7 +342,7 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
 			}
 		});
 	}
-	catch(error) {
+	catch(err) {
 		await transaction.rollback();
 		throw err; // Let catchAsync handle it
 	}
