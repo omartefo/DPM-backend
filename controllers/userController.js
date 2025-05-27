@@ -315,7 +315,6 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
 		});
 
 		if (isUserAwarded) {
-			await transaction.rollback();
 			throw new AppError('Cannot delete user: User is awarded in tenders.', 400);
 		}
 
@@ -338,7 +337,7 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
 		res.status(204).json({
 			status: 'success',
 			data: {
-					userToDelete
+				userToDelete
 			}
 		});
 	}
