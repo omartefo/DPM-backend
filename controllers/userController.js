@@ -128,7 +128,7 @@ exports.getUser = catchAsync(async (req, res, next) => {
 		include: [
 			{ 
 				model: UserCompany,
-				attributes: ['companyId', 'name', 'commercialRegNumber', 'address', 'totalEmployees'],
+				attributes: ['companyId', 'name', 'commercialRegNumber', 'address', 'totalEmployees', 'isVerifiedOnBinaa'],
 				required: false 
 			}
 		]
