@@ -12,7 +12,7 @@ const { Bidding } = require('../models/biddingModel');
 // Utils
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
-const { sendEmail } = require('../utils/helpers');
+const { sendEmail, getUsersWhoCanHaveCompany } = require('../utils/helpers');
 const constants = require('../utils/constants');
 const { Project } = require('../models/projectsModel');
 const { UserNotification } = require('../models/notificationModel');
@@ -173,7 +173,7 @@ exports.createUser = catchAsync(async (req, res, next) => {
 		const encryptedPassword = await bcrypt.hash(password, salt);
 		let company;
 
-		if ([constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR].includes(type))
+		if (getUsersWhoCanHaveCompany().includes(type))
 		{
 			const { companyName, commercialRegNumber, address, totalEmployees, isVerifiedOnBinaa } = req.body;
 			const companyData = {
@@ -248,14 +248,8 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 			where: { userId },
 			transaction
 		});
-
-		const userWhoCanHaveCompany = [
-			constants.userTypes.CONSULTANT,
-			constants.userTypes.SUPPLIER,
-			constants.userTypes.CONTRACTOR
-		];
 	
-		if (userWhoCanHaveCompany.includes(type)) {
+		if (getUsersWhoCanHaveCompany().includes(type)) {
 			const { companyName, commercialRegNumber, address, totalEmployees, isVerifiedOnBinaa } = req.body;
 			const companyInfo = {
 				name: companyName,
@@ -319,13 +313,7 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
 		}
 
 		// If user is Consultant, Contractor, or Supplier, delete biddings & notifications
-		const usersWhoCanBid = [
-			constants.userTypes.CONSULTANT,
-			constants.userTypes.CONTRACTOR,
-			constants.userTypes.SUPPLIER
-		];
-
-		if (usersWhoCanBid.includes(userToDelete.type)) {
+		if (getUsersWhoCanHaveCompany().includes(userToDelete.type)) {
 			await Bidding.destroy({ where: { userId }, transaction });
 			await UserNotification.destroy({ where: { userId }, transaction });
 		}
@@ -348,21 +336,21 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
 });
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
-    const { newPassword } = req.body;
-    if (!newPassword) {
-        return next(new AppError('New password is required.', 404));
-    }
+	const { newPassword } = req.body;
+	if (!newPassword) {
+		return next(new AppError('New password is required.', 404));
+	}
 
-    const userId = req.params.id;
+	const userId = req.params.id;
 	const user = await User.findByPk(userId, { attributes: ['userId', 'password'] });
 
 	if (!user) return next(new AppError('No record found with given Id', 404));
 
-    const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(10);
 	const encryptedNewPassword = await bcrypt.hash(newPassword, salt);
 
-    user.password = encryptedNewPassword;
-    await user.save();
+	user.password = encryptedNewPassword;
+	await user.save();
 
 	res.status(200).json({
 		status: 'success',
@@ -450,6 +438,7 @@ validateNonClientUser = (user) => {
 		mobileNumber: Joi.string().required().min(constants.userConfig.MOBILE_NUMBER_LENGTH).max(constants.userConfig.MOBILE_NUMBER_LENGTH),
 		password: Joi.string().required().min(8),
 		type: Joi.string().required().valid(constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR),
+		isVerifiedOnBinaa: Joi.bool(),
 
 		// User Company Info
 		companyName: Joi.string().required(),

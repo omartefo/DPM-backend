@@ -57,3 +57,11 @@ exports.getBiddingStatus = (tenderMinPrice, tenderMaxPrice, userPrice) => {
 
 	return status;
 }
+
+exports.getUsersWhoCanHaveCompany = () => {
+	return [
+		constants.userTypes.CONSULTANT,
+		constants.userTypes.SUPPLIER,
+		constants.userTypes.CONTRACTOR
+	];
+}
