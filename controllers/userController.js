@@ -176,7 +176,7 @@ exports.createUser = catchAsync(async (req, res, next) => {
 		if ([constants.userTypes.CONSULTANT, constants.userTypes.SUPPLIER, constants.userTypes.CONTRACTOR].includes(type))
 		{
 			const { companyName, commercialRegNumber, address, totalEmployees, isVerifiedOnBinaa } = req.body;
-			const company = {
+			const companyData = {
 				name: companyName,
 				commercialRegNumber,
 				address,
@@ -184,7 +184,7 @@ exports.createUser = catchAsync(async (req, res, next) => {
 				isVerifiedOnBinaa
 			};
 
-			company = await UserCompany.create(company, { transaction });
+			company = await UserCompany.create(companyData, { transaction });
 		}
 
 		const userData = { 
