@@ -8,9 +8,7 @@ const AppError = require('./utils/appError');
 
 const app = express();
 
-dotEnv.config({
-	path: './config.env'
-});
+dotEnv.config();
 
 app.use(express.json());
 app.use(compression());
