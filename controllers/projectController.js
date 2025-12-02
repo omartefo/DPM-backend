@@ -97,7 +97,7 @@ exports.createProject = catchAsync(async (req, res, next) => {
 		"https://toptender.qa/toptender/public/images/works/791628583231.jpg"
 	];
 
-	const { name, location, description, type, image, clientId } = req.body;
+	const { name, location, description, type, clientId } = req.body;
 
 	const project = await Project.create({ 
 		name, 

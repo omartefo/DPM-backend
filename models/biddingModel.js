@@ -36,10 +36,14 @@ const Bidding = db.define('bidding',
 	durationInNumbers: Sequelize.STRING,
 	priceInLetters: Sequelize.STRING,
 	priceInNumbers: Sequelize.STRING,
-	status: {								// Qualified 		- If price is in range of tender price
+	status: {												// Qualified 		- If price is in range of tender price
 		type: Sequelize.STRING,				// Not_Qualified	- If price is NOT in range of tender price
 		allowNull: true
-	}
+	},
+	stage: {
+    type: Sequelize.STRING,
+    allowNull: true
+  }
 });
 
 function validateBid(bid) {

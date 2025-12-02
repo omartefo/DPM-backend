@@ -34,6 +34,7 @@ exports.getAllBids = catchAsync(async (req, res, next) => {
 	const bids = await Bidding.findAndCountAll({
 		limit,
 		offset,
+		attributes: ['biddingId', 'priceInNumbers', 'status', 'stage'],
 		include: [
 		{ 
 			model: User, attributes: ['name', 'mobileNumber'],
@@ -62,7 +63,7 @@ exports.getBiddersByTenderId = catchAsync(async (req, res, next) => {
 			model: User, attributes: ['userId', 'name'],
 			include: { model: UserCompany, attributes: ['companyId', 'name'] }
 		},
-		attributes: ['biddingId', 'priceInNumbers']
+		attributes: ['biddingId', 'priceInNumbers', 'stage']
 	});
 
 	res.status(200).json({

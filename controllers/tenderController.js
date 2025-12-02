@@ -248,7 +248,7 @@ exports.tenderBids = catchAsync(async (req, res, next) => {
 
 	const bids = await Bidding.findAll(
 		{
-			attributes: ['priceInNumbers', 'durationInNumbers', 'status'],
+			attributes: ['priceInNumbers', 'durationInNumbers', 'status', 'stage'],
 			where: { tenderId, status: { [Op.ne]: null } }, 
 			include: { 
 				model: User,
