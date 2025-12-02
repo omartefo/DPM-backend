@@ -15,6 +15,8 @@ const catchAsync = require("../utils/catchAsync");
 const { sendEmail, getBiddingStatus } = require("../utils/helpers");
 const constants = require("../utils/constants");
 
+const VALID_STAGES = ['Technical Meeting', 'Site Visit', 'Shortlisted'];
+
 exports.getAllBids = catchAsync(async (req, res, next) => {
 	const search = req.query;
 
@@ -34,7 +36,7 @@ exports.getAllBids = catchAsync(async (req, res, next) => {
 	const bids = await Bidding.findAndCountAll({
 		limit,
 		offset,
-		attributes: ['biddingId', 'priceInNumbers', 'status', 'stage'],
+		attributes: ['biddingId', 'durationInLetters', 'durationInNumbers', 'priceInLetters', 'priceInNumbers', 'status', 'stage', 'createdAt'],
 		include: [
 		{ 
 			model: User, attributes: ['name', 'mobileNumber'],
@@ -190,6 +192,26 @@ exports.deleteBid = catchAsync(async (req, res, next) => {
 			bid
 		}
 	});
+});
+
+exports.updateBidStage = catchAsync(async (req, res, next) => {
+  const biddingId = +req.params.id;
+  const { stage } = req.body;
+
+  if (!VALID_STAGES.includes(stage) && stage !== null && stage !== '') {
+    return next(new AppError('Invalid stage value.', 400));
+  }
+
+  const bid = await Bidding.findByPk(biddingId);
+  if (!bid) return next(new AppError('Could not find bid with the given Id', 404));
+
+  bid.stage = stage || null;
+  await bid.save();
+
+  res.status(200).json({
+    status: 'success',
+    data: { bid }
+  });
 });
 
 async function scheduleBiddingArrivalEmail(lastTenMinutes, user) {

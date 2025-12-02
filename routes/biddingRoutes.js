@@ -7,6 +7,15 @@ const constants = require('../utils/constants');
 
 router.route('/tender/:id').get(biddingController.getBiddersByTenderId);
 router.route('/getBidsByUser').get(auth, biddingController.getBidsByUserId);
+router.route('/:id/stage')
+	.patch(
+		auth, 
+		restrictTo(
+			constants.userTypes.SUPER_ADMIN, 
+			constants.userTypes.ADMIN,
+		),
+		biddingController.updateBidStage
+	)
 
 router.route('/')
 	.get(
