@@ -249,7 +249,7 @@ exports.tenderBids = catchAsync(async (req, res, next) => {
 	const page = +req.query.page || 1;
 	const limit = +req.query.limit || 10;
 	const offset = (page - 1) * limit;
-	const status = req.query.status;
+	const { company, status } = req.query;
 
 	const where = {
 		tenderId,
@@ -260,21 +260,31 @@ exports.tenderBids = catchAsync(async (req, res, next) => {
 		where['status'] = status.replaceAll(' ', '_');
 	}
 
+	const userCompanyInclude = {
+		attributes: ['name', 'isVerifiedOnBinaa'],
+		model: UserCompany,
+		required: false
+	};
+
+	if (company) {
+		userCompanyInclude.required = true;
+		userCompanyInclude.where = { name: { [Op.like]: `%${company}%` } };
+	}
+
+	const userInclude = {
+		model: User,
+		attributes: ['userId'],
+		include: userCompanyInclude,
+		required: !!company    // inner join when filtering by company
+	};
+
 	const bids = await Bidding.findAndCountAll(
 		{
 			attributes: ['biddingId', 'priceInNumbers', 'durationInNumbers', 'status', 'stage'],
 			where,
 			limit,
 			offset,
-			include: { 
-				model: User,
-				attributes: ['userId'],
-				include: {
-					attributes: ['name', 'isVerifiedOnBinaa'],
-					model: UserCompany,
-					required: false 
-				}
-			},
+			include: userInclude,
 			order: [['priceInNumbers', 'ASC']]
 		});
 
