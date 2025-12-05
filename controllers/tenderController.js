@@ -249,11 +249,21 @@ exports.tenderBids = catchAsync(async (req, res, next) => {
 	const page = +req.query.page || 1;
 	const limit = +req.query.limit || 10;
 	const offset = (page - 1) * limit;
+	const status = req.query.status;
+
+	const where = {
+		tenderId,
+		status: { [Op.ne]: null }
+	};
+
+	if (status) {
+		where['status'] = status.replaceAll(' ', '_');
+	}
 
 	const bids = await Bidding.findAndCountAll(
 		{
 			attributes: ['biddingId', 'priceInNumbers', 'durationInNumbers', 'status', 'stage'],
-			where: { tenderId, status: { [Op.ne]: null } },
+			where,
 			limit,
 			offset,
 			include: { 
