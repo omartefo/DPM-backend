@@ -246,10 +246,16 @@ exports.changeTenderStatus = catchAsync(async (req, res, next) => {
 exports.tenderBids = catchAsync(async (req, res, next) => {
 	const tenderId = req.params.id;
 
-	const bids = await Bidding.findAll(
+	const page = +req.query.page || 1;
+	const limit = +req.query.limit || 10;
+	const offset = (page - 1) * limit;
+
+	const bids = await Bidding.findAndCountAll(
 		{
 			attributes: ['biddingId', 'priceInNumbers', 'durationInNumbers', 'status', 'stage'],
-			where: { tenderId, status: { [Op.ne]: null } }, 
+			where: { tenderId, status: { [Op.ne]: null } },
+			limit,
+			offset,
 			include: { 
 				model: User,
 				attributes: ['userId'],
