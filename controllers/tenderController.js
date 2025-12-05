@@ -249,7 +249,7 @@ exports.tenderBids = catchAsync(async (req, res, next) => {
 	const page = +req.query.page || 1;
 	const limit = +req.query.limit || 10;
 	const offset = (page - 1) * limit;
-	const { company, status } = req.query;
+	const { company, status, stage } = req.query;
 
 	const where = {
 		tenderId,
@@ -258,6 +258,10 @@ exports.tenderBids = catchAsync(async (req, res, next) => {
 
 	if (status) {
 		where['status'] = status.replaceAll(' ', '_');
+	}
+
+	if (stage) {
+		where['stage'] = stage;
 	}
 
 	const userCompanyInclude = {
