@@ -33,9 +33,9 @@ const Bidding = db.define('bidding',
 		}
 	},
 	durationInLetters: Sequelize.STRING,
-	durationInNumbers: Sequelize.STRING,
+	durationInNumbers: Sequelize.INTEGER,
 	priceInLetters: Sequelize.STRING,
-	priceInNumbers: Sequelize.STRING,
+	priceInNumbers: Sequelize.INTEGER,
 	status: {												// Qualified 		- If price is in range of tender price
 		type: Sequelize.STRING,				// Not_Qualified	- If price is NOT in range of tender price
 		allowNull: true

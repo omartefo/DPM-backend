@@ -249,7 +249,7 @@ exports.tenderBids = catchAsync(async (req, res, next) => {
 	const page = +req.query.page || 1;
 	const limit = +req.query.limit || 10;
 	const offset = (page - 1) * limit;
-	const { company, status, stage } = req.query;
+	const { company, status, stage, sort, order } = req.query;
 
 	const where = {
 		tenderId,
@@ -257,40 +257,75 @@ exports.tenderBids = catchAsync(async (req, res, next) => {
 	};
 
 	if (status) {
-		where['status'] = status.replaceAll(' ', '_');
+		where.status = status.replaceAll(' ', '_');
 	}
 
 	if (stage) {
-		where['stage'] = stage;
+		where.stage = stage;
 	}
 
+	/** -----------------------
+	 *  Build dynamic ORDER clause
+	 *  ----------------------- */
+	let orderBy = [['priceInNumbers', 'ASC']];  // default sorting
+
+	if (sort) {
+		const direction = (order || 'asc').toUpperCase();
+
+		switch (sort) {
+			case 'price':
+				orderBy = [['priceInNumbers', direction]];
+				break;
+
+			case 'duration':
+				orderBy = [['durationInNumbers', direction]];
+				break;
+
+			case 'company':
+				// Sort by nested joined column
+				orderBy = [[User, UserCompany, 'name', direction]];
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	/** -----------------------
+	 *  Company filter
+	 *  ----------------------- */
 	const userCompanyInclude = {
-		attributes: ['name', 'isVerifiedOnBinaa'],
 		model: UserCompany,
+		attributes: ['name', 'isVerifiedOnBinaa'],
 		required: false
 	};
 
 	if (company) {
-		userCompanyInclude.required = true;
-		userCompanyInclude.where = { name: { [Op.like]: `%${company}%` } };
+		userCompanyInclude.where = {
+			name: { [Op.like]: `%${company}%` }
+		};
+		userCompanyInclude.required = true; // only return matching companies
 	}
 
-	const userInclude = {
-		model: User,
-		attributes: ['userId'],
-		include: userCompanyInclude,
-		required: !!company    // inner join when filtering by company
-	};
-
-	const bids = await Bidding.findAndCountAll(
-		{
-			attributes: ['biddingId', 'priceInNumbers', 'durationInNumbers', 'status', 'stage'],
-			where,
-			limit,
-			offset,
-			include: userInclude,
-			order: [['priceInNumbers', 'ASC']]
-		});
+	/** -----------------------
+	 *  Final query
+	 *  ----------------------- */
+	const bids = await Bidding.findAndCountAll({
+		where,
+		attributes: ['biddingId', 'priceInNumbers', 'durationInNumbers', 'status', 'stage'],
+		limit,
+		offset,
+		distinct: true,
+		include: [
+			{
+				model: User,
+				attributes: ['userId'],
+				required: true,
+				include: [ userCompanyInclude ]
+			}
+		],
+		order: orderBy
+	});
 
 	res.status(200).json({
 		status: 'success',
