@@ -8,3 +8,9 @@ ADD COLUMN isVerifiedOnBinaa BOOLEAN DEFAULT FALSE;
 
 ALTER TABLE `biddings`
 ADD COLUMN stage VARCHAR(50) NULL;
+
+ALTER TABLE `biddings` 
+MODIFY COLUMN durationInNumbers INT;
+
+ALTER TABLE `biddings` 
+MODIFY COLUMN priceInNumbers INT;
